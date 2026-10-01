@@ -229,6 +229,12 @@ public sealed class Step6InstallControl : WizardStepControl
             if (result.RestartNeeded)
                 AppendLog(new LogEntry(LogLevel.Warning, "Windows asked for a restart during the prerequisites stage. Restart the server before go-live."));
         }
+        catch (Exception ex)
+        {
+            // e.g. the log folder couldn't be made admin-only (WizardDataFolder): nothing was changed.
+            AppendLog(new LogEntry(LogLevel.Error, ex.Message));
+            ShowResult(_lblStatus, "Couldn't start: " + ex.Message, Color.Firebrick);
+        }
         finally
         {
             _btnStart.Enabled = true;

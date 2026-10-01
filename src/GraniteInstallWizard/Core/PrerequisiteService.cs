@@ -23,27 +23,12 @@ public sealed class PrerequisiteService
 
     private static string DismPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "dism.exe");
 
-    private static string ProgramFiles => Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+    // Detection is shared with the launcher (Granite.Toolkit.Core.Discovery.ServerPrerequisites).
+    private static bool AncmInstalled => ServerPrerequisites.AncmInstalled;
 
-    /// <summary>The ASP.NET Core Module (V2), which the Hosting Bundle registers into IIS.</summary>
-    private static bool AncmInstalled =>
-        File.Exists(Path.Combine(ProgramFiles, "IIS", "Asp.Net Core Module", "V2", "aspnetcorev2.dll"));
+    private static bool UrlRewriteInstalled => ServerPrerequisites.UrlRewriteInstalled;
 
-    private static bool UrlRewriteInstalled =>
-        File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "inetsrv", "rewrite.dll"));
-
-    /// <summary>Highest installed Microsoft.AspNetCore.App runtime for a major version, or null.</summary>
-    private static string? AspNetCoreRuntime(int major)
-    {
-        string shared = Path.Combine(ProgramFiles, "dotnet", "shared", "Microsoft.AspNetCore.App");
-        if (!Directory.Exists(shared)) return null;
-        return Directory.GetDirectories(shared)
-            .Select(Path.GetFileName)
-            .Where(n => n is not null && n.StartsWith(major + ".", StringComparison.Ordinal))
-            .Select(n => n!)
-            .OrderByDescending(n => Version.TryParse(n.Split('-')[0], out var v) ? v : new Version(0, 0))
-            .FirstOrDefault();
-    }
+    private static string? AspNetCoreRuntime(int major) => ServerPrerequisites.AspNetCoreRuntime(major);
 
     public async Task<IReadOnlyList<PrereqStatus>> CheckAsync(CancellationToken token)
     {

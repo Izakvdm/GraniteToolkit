@@ -1,6 +1,6 @@
-using GraniteDbSwitcher.Models;
+using Granite.Toolkit.Core.Iis;
 
-namespace GraniteDbSwitcher.Core;
+namespace Granite.Toolkit.Core.Discovery;
 
 /// <summary>
 /// Finds the Granite installs in IIS: every site whose root folder holds a

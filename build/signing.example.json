@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy to build\\signing.json (git-ignored) for -Sign ArtifactSigning. No secrets here: authentication is your Azure sign-in (az login).",
+  "DlibPath": "C:\\Tools\\Microsoft.ArtifactSigning.Client\\bin\\x64\\Azure.CodeSigning.Dlib.dll",
+  "Endpoint": "https://eus.codesigning.azure.net/",
+  "CodeSigningAccountName": "your-artifact-signing-account",
+  "CertificateProfileName": "your-public-trust-profile",
+  "ExcludeCredentials": []
+}

@@ -79,7 +79,7 @@ public sealed class InstallRunner
     public async Task<InstallResult> RunAsync(InstallContext c, CancellationToken token)
     {
         _context = c;
-        Directory.CreateDirectory(LogFolder);
+        WizardDataFolder.PrepareLogFolder(); // admin-only (see WizardDataFolder); throws rather than log into an open folder
         string logFile = Path.Combine(LogFolder, $"install-{DateTime.Now:yyyyMMdd-HHmmss}{(c.DryRun ? "-dryrun" : "")}.log");
         _logWriter = new StreamWriter(logFile, append: false, Encoding.UTF8) { AutoFlush = true };
 

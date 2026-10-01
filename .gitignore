@@ -23,3 +23,10 @@ TestResults/
 *.log
 .DS_Store
 Thumbs.db
+
+# Release output
+artifacts/
+
+# Signing account details (no secrets, but per-machine) and the file signtool reads
+build/signing.json
+build/signing.metadata.json

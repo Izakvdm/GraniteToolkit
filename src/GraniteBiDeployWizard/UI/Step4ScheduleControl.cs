@@ -142,7 +142,8 @@ public sealed class Step4ScheduleControl : WizardStepControl
         ForeColor = Color.DimGray,
         Margin = new Padding(0, 4, 0, 12),
         Visible = false,
-        Text = "Run_BI_Sync.bat is still generated in the script folder, ready to wire into " +
+        Text = "Run_BI_Sync.bat is still generated (in C:\\ProgramData\\Granite BI Deploy\\Tasks, which only " +
+               "administrators can change), ready to wire into " +
                "whatever you decide on later -- Task Scheduler, SQL Server Agent, or Granite " +
                "Scheduler. Nothing runs it automatically until then, so the BI tables will " +
                "fall behind after the initial sync."

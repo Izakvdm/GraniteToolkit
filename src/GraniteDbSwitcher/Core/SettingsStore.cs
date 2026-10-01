@@ -1,3 +1,4 @@
+using Granite.Toolkit.Core.Security;
 using System.Text.Json;
 using GraniteDbSwitcher.Models;
 
@@ -20,11 +21,23 @@ public static class SettingsStore
 
     private static string FilePath => Path.Combine(Folder, "settings.json");
 
+    /// <summary>
+    /// Makes the folder admin-only (ProgramData is writable by every user).
+    /// Settings name the SQL Server the switcher signs in to, so settings
+    /// from a folder others could change aren't trusted: the switcher starts
+    /// fresh instead.
+    /// </summary>
+    private static bool Secure()
+    {
+        try { return SecureFolders.EnsureAdminOnly(Folder) != FolderSecureResult.Tightened; }
+        catch { return false; }
+    }
+
     public static SwitcherSettings Load()
     {
         try
         {
-            if (File.Exists(FilePath))
+            if (Secure() && File.Exists(FilePath))
                 return JsonSerializer.Deserialize<SwitcherSettings>(File.ReadAllText(FilePath)) ?? new SwitcherSettings();
         }
         catch { /* unreadable settings: start fresh */ }
@@ -35,7 +48,7 @@ public static class SettingsStore
     {
         try
         {
-            Directory.CreateDirectory(Folder);
+            SecureFolders.EnsureAdminOnly(Folder);
             File.WriteAllText(FilePath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch { /* best effort */ }
@@ -51,7 +64,7 @@ public static class LogFile
     {
         try
         {
-            Directory.CreateDirectory(Folder);
+            SecureFolders.EnsureAdminOnly(Folder);
             string file = Path.Combine(Folder, $"switch-{entry.Timestamp:yyyyMMdd}.log");
             File.AppendAllText(file, $"{entry.Timestamp:yyyy-MM-dd HH:mm:ss} [{entry.Level}] {entry.Message}{Environment.NewLine}");
         }

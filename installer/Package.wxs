@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GraniteWMS Toolkit: per-machine MSI.
+
+  Security by design:
+  - Installs to C:\Program Files\Granite Toolkit, which only administrators
+    can change, so nobody else can swap an exe or plant a DLL the elevated
+    toolkit would load.
+  - Creates C:\ProgramData\Granite Toolkit (logs) owned by Administrators,
+    with inheritance cut and only Administrators and SYSTEM allowed in.
+    ProgramData otherwise lets any user create and write files.
+  - No custom actions, no services, nothing that runs at install time
+    beyond Windows Installer itself.
+  - The developer tools (DB Switcher) are a separate feature, off by
+    default, so client servers don't get them. On a developer machine:
+      msiexec /i GraniteToolkit-x.y.z.msi ADDLOCAL=ALL
+  - Upgrades replace the previous version in place (MajorUpgrade); a
+    downgrade is refused.
+  - Uninstall removes the program files. Logs stay in ProgramData, as an
+    audit trail of what the toolkit did on the server.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="GraniteWMS Toolkit"
+           Manufacturer="$(var.Manufacturer)"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="982c0016-9e44-45b1-8d64-934d689bfd05"
+           Scope="perMachine"
+           InstallerVersion="500"
+           Compressed="yes">
+
+    <SummaryInformation Description="GraniteWMS Toolkit $(var.ProductVersion)" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="GraniteToolkit.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="GraniteToolkit.ico" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <!-- Windows 10 / Server 2016 or later, 64-bit. -->
+    <Launch Condition="VersionNT64 AND VersionNT >= 603" Message="[ProductName] needs 64-bit Windows 10, Windows Server 2016 or later." />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Granite Toolkit" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATAFOLDER" Name="Granite Toolkit">
+        <Directory Id="LOGFOLDER" Name="Logs" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Core" Title="GraniteWMS Toolkit" Description="The dashboard and the Install, BI and Attach modules." Level="1" AllowAbsent="no">
+      <ComponentGroupRef Id="CoreFiles" />
+      <ComponentRef Id="DataFolders" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <Feature Id="DeveloperTools" Title="Developer tools" Description="DB Switcher. For development and test machines only." Level="1000">
+      <ComponentGroupRef Id="DeveloperFiles" />
+    </Feature>
+
+  </Package>
+
+  <Fragment>
+    <!-- Owner Administrators, protected (no inherited entries), full control
+         for Administrators and SYSTEM only. Same rule the toolkit enforces
+         at run time (Granite.Toolkit.Core.Security.SecureFolders). -->
+    <Component Id="DataFolders" Directory="DATAFOLDER" Guid="5d0a7c4e-3f2b-4d7e-9a61-2c8b1f0e6a93">
+      <CreateFolder>
+        <PermissionEx Sddl="O:BAG:SYD:PAI(A;OICI;FA;;;BA)(A;OICI;FA;;;SY)" />
+      </CreateFolder>
+      <CreateFolder Directory="LOGFOLDER">
+        <PermissionEx Sddl="O:BAG:SYD:PAI(A;OICI;FA;;;BA)(A;OICI;FA;;;SY)" />
+      </CreateFolder>
+    </Component>
+
+    <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="b7e3a1d2-6c48-4f0b-8e25-91a4d3c7f6e0">
+      <Shortcut Id="ToolkitShortcut"
+                Name="GraniteWMS Toolkit"
+                Description="Dashboard and installers for GraniteWMS"
+                Target="[INSTALLFOLDER]GraniteToolkit.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="GraniteToolkit.ico" />
+      <RegistryValue Root="HKLM" Key="Software\GraniteWMS Toolkit" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+  </Fragment>
+
+</Wix>

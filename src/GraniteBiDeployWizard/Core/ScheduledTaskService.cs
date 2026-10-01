@@ -49,9 +49,11 @@ public static class ScheduledTaskService
         };
         taskDefinition.Triggers.Add(timeTrigger);
 
-        // Anchor execution to the script folder (not System32, .bat's default
-        // working directory when Task Scheduler launches it with none set).
-        var execAction = new ExecAction(batchFilePath, arguments: null, workingDirectory: context.ScriptFolder);
+        // Run in the wrapper's own admin-only folder (TaskFolder), not System32
+        // (.bat's default) and not the script folder: cmd looks for sqlcmd in
+        // the working directory first, so that folder must be one only
+        // administrators can write to.
+        var execAction = new ExecAction(batchFilePath, arguments: null, workingDirectory: Path.GetDirectoryName(batchFilePath));
         taskDefinition.Actions.Add(execAction);
 
         taskDefinition.Settings.Enabled = true;

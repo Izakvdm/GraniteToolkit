@@ -14,12 +14,12 @@
     <!-- Product metadata -->
     <Product>GraniteWMS DB Switcher</Product>
     <Company>Cradle Technology Services</Company>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Description>Points an installed GraniteWMS stack (Business API, Custodian, Process App) at a different database on the same SQL Server, for testing client databases without an IIS install per client.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
   </ItemGroup>
 
   <ItemGroup>

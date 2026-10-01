@@ -113,7 +113,7 @@ public sealed class Step1ReleaseControl : WizardStepControl
         if (ReleaseSource.IsZip(source))
         {
             await UnpackAsync(source, "Extracting the zip",
-                (progress, token) => ReleaseSource.ExtractZip(source, ReleaseSource.ExtractionRoot, progress, token),
+                (progress, token) => ReleaseSource.ExtractZip(source, WizardDataFolder.PrepareExtractionRoot(), progress, token),
                 root => $"Release extracted to {root}.", "Couldn't use that zip");
             return;
         }
@@ -132,7 +132,7 @@ public sealed class Step1ReleaseControl : WizardStepControl
         if (packed is not null)
         {
             await UnpackAsync(source, "Unpacking the app zips in this release",
-                (progress, token) => ReleaseSource.PreparePackedFolder(packed, ReleaseSource.ExtractionRoot, progress, token),
+                (progress, token) => ReleaseSource.PreparePackedFolder(packed, WizardDataFolder.PrepareExtractionRoot(), progress, token),
                 root => $"The apps in this release are zipped; unpacked them to {root}.", "Couldn't unpack that release");
             return;
         }

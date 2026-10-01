@@ -18,10 +18,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Shared toolkit code the module uses (pure files only). -->
-    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
-    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
-    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
 
     <Compile Include="../../src/GraniteBiDeployWizard/Models/DeploymentContext.cs" Link="Models/DeploymentContext.cs" />
     <Compile Include="../../src/GraniteBiDeployWizard/Models/ScriptFileItem.cs" Link="Models/ScriptFileItem.cs" />

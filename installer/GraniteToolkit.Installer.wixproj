@@ -1,0 +1,32 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <!--
+    The GraniteWMS Toolkit MSI. Built by build\Publish.ps1, which passes:
+      ProductVersion  from src\GraniteToolkit\GraniteToolkit.csproj
+      Manufacturer    the publisher (-Publisher), shown in Programs and Features
+      AppFilesWxs     the generated file list of the signed app folder
+      IconPath        the toolkit icon
+
+    WiX v5 (MS-RL licence). WiX v6 and later ask commercial users to pay
+    the Open Source Maintenance Fee; this file and Package.wxs work with
+    either, so moving up is a one-line change here once that's settled.
+  -->
+  <PropertyGroup>
+    <OutputName>GraniteToolkit</OutputName>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.0.0</ProductVersion>
+    <Manufacturer Condition="'$(Manufacturer)' == ''">Development build</Manufacturer>
+    <DefineConstants>ProductVersion=$(ProductVersion);Manufacturer=$(Manufacturer);IconPath=$(IconPath)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(AppFilesWxs)" Condition="'$(AppFilesWxs)' != ''" />
+  </ItemGroup>
+
+  <Target Name="RequireInputs" BeforeTargets="Build">
+    <Error Condition="'$(AppFilesWxs)' == '' Or !Exists('$(AppFilesWxs)')" Text="Build the MSI through build\Publish.ps1 (AppFilesWxs not given)." />
+    <Error Condition="'$(IconPath)' == '' Or !Exists('$(IconPath)')" Text="IconPath not given or not found." />
+  </Target>
+
+</Project>

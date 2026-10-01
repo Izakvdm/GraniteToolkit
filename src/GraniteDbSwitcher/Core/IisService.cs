@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using GraniteDbSwitcher.Models;
+using Granite.Toolkit.Core.Discovery;
 
 namespace GraniteDbSwitcher.Core;
 
@@ -16,49 +15,11 @@ public static class IisService
         return r.Output;
     }
 
-    public static async Task<IReadOnlyList<GraniteInstall>> DiscoverAsync(CancellationToken token)
-    {
-        if (!IisInstalled)
-            throw new InvalidOperationException($"IIS isn't installed on this machine (no {IisCommands.AppCmdPath}).");
+    /// <summary>The Granite installs in IIS (shared with the launcher; see GraniteInstallScanner).</summary>
+    public static async Task<IReadOnlyList<GraniteInstall>> DiscoverAsync(CancellationToken token) =>
+        (await GraniteInstallScanner.ScanAsync(token)).Installs;
 
-        var sites = IisCommands.ParseSites(await RunListAsync(IisCommands.ListSites(), token));
-        var apps = IisCommands.ParseApps(await RunListAsync(IisCommands.ListApps(), token));
-        var vdirs = IisCommands.ParseVdirs(await RunListAsync(IisCommands.ListVdirs(), token));
-
-        var installs = InstallDiscovery.Build(sites, apps, vdirs,
-            File.Exists,
-            path => { try { return File.Exists(path) ? File.ReadAllText(path) : null; } catch { return null; } },
-            Environment.ExpandEnvironmentVariables);
-
-        foreach (var install in installs)
-            install.AppVersion = ReadAppVersion(install);
-
-        return installs;
-    }
-
-    /// <summary>FileVersion of the Business API (or, failing that, Process App) main dll.</summary>
-    public static Version? ReadAppVersion(GraniteInstall install)
-    {
-        var candidates = new[]
-        {
-            (GraniteAppKind.BusinessApi, "Granite.Business.API.dll"),
-            (GraniteAppKind.ProcessApp, "Granite.Process.App.dll"),
-            (GraniteAppKind.Custodian, "Granite.Custodian.dll")
-        };
-        foreach (var (kind, dll) in candidates)
-        {
-            var app = install.Get(kind);
-            if (app is null) continue;
-            string path = Path.Combine(app.PhysicalPath, dll);
-            try
-            {
-                string? fv = FileVersionInfo.GetVersionInfo(path).FileVersion;
-                if (fv is not null && Version.TryParse(fv.Split(' ')[0], out var v)) return v;
-            }
-            catch { /* try the next one */ }
-        }
-        return null;
-    }
+    public static Version? ReadAppVersion(GraniteInstall install) => GraniteInstallScanner.ReadAppVersion(install);
 
     public static async Task<IReadOnlyDictionary<string, string>> PoolStatesAsync(CancellationToken token)
     {

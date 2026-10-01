@@ -1,6 +1,6 @@
 using Granite.Toolkit.Core.Iis;
 
-namespace GraniteDbSwitcher.Models;
+namespace Granite.Toolkit.Core.Discovery;
 
 public enum GraniteAppKind
 {

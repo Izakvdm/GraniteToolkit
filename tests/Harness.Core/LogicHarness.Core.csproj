@@ -15,10 +15,4 @@
     <RootNamespace>LogicHarness.Core</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
-    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
-    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
-  </ItemGroup>
-
 </Project>

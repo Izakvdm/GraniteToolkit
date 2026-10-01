@@ -1,0 +1,29 @@
+<Project>
+
+  <!--
+    Central package management: every NuGet package and version the toolkit
+    uses is listed here, once. All modules publish into one folder, so two
+    modules pulling different versions of the same library would overwrite
+    each other's files; one list makes that impossible.
+
+    Transitive pinning also lets a vulnerable transitive package be lifted
+    to a fixed version here without touching the projects. Publish.ps1 runs
+    dotnet list package with the vulnerable and include-transitive options
+    before every release build.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageVersion Include="TaskScheduler" Version="2.12.1" />
+    <PackageVersion Include="System.DirectoryServices.AccountManagement" Version="8.0.0" />
+
+    <!-- Pinned: TaskScheduler (BI) brings 8.0.1 and SqlClient brings 8.0.0;
+         the shared publish folder needs one. -->
+    <PackageVersion Include="System.Diagnostics.EventLog" Version="8.0.1" />
+  </ItemGroup>
+
+</Project>

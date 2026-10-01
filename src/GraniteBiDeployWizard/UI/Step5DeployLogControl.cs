@@ -222,7 +222,7 @@ public sealed class Step5DeployLogControl : WizardStepControl
 
                         case SchedulerType.None:
                             AppendLog(new LogEntry(LogLevel.Info, "Generating Run_BI_Sync.bat wrapper..."));
-                            string skipBatchPath = BatchFileGenerator.WriteToScriptFolder(_context);
+                            string skipBatchPath = BatchFileGenerator.WriteTo(_context, TaskFolder.Prepare(_context));
                             AppendLog(new LogEntry(LogLevel.Success, $"Wrote {skipBatchPath}"));
                             AppendLog(new LogEntry(LogLevel.Warning,
                                 "Scheduling skipped, as chosen on Step 5 -- no Windows Scheduled Task or SQL Server " +
@@ -233,7 +233,7 @@ public sealed class Step5DeployLogControl : WizardStepControl
 
                         default: // WindowsTaskScheduler
                             AppendLog(new LogEntry(LogLevel.Info, "Generating Run_BI_Sync.bat wrapper..."));
-                            string batchPath = BatchFileGenerator.WriteToScriptFolder(_context);
+                            string batchPath = BatchFileGenerator.WriteTo(_context, TaskFolder.Prepare(_context));
                             AppendLog(new LogEntry(LogLevel.Success, $"Wrote {batchPath}"));
 
                             AppendLog(new LogEntry(LogLevel.Info,

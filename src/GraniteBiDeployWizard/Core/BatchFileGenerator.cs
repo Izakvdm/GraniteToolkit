@@ -32,11 +32,19 @@ public static class BatchFileGenerator
         return sb.ToString();
     }
 
-    /// <summary>Writes the generated wrapper into the (already normalized) script folder.</summary>
-    public static string WriteToScriptFolder(DeploymentContext context)
+    /// <summary>
+    /// Writes the generated wrapper into <paramref name="folder"/>. The app
+    /// passes TaskFolder.Prepare(context), an admin-only folder: the
+    /// scheduled task runs this file with highest privileges, so nobody else
+    /// may be able to change it, or drop a sqlcmd.exe next to it.
+    /// </summary>
+    public static string WriteTo(DeploymentContext context, string folder)
     {
-        string path = context.BuildBatchFilePath();
+        string path = Path.Combine(folder, context.BatchFileName);
         File.WriteAllText(path, Generate(context), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         return path;
     }
+
+    /// <summary>Writes the wrapper into the script folder (kept for the LogicHarness).</summary>
+    public static string WriteToScriptFolder(DeploymentContext context) => WriteTo(context, context.ScriptFolder);
 }

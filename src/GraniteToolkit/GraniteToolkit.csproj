@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GraniteToolkit</RootNamespace>
+    <AssemblyName>GraniteToolkit</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\GraniteToolkit.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Product metadata -->
+    <Product>GraniteWMS Toolkit</Product>
+    <Version>0.1.0</Version>
+    <Description>Dashboard and launcher for the GraniteWMS installer modules: shows what's on the server and starts the signed modules installed next to it.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\granite_reversed.png" LogicalName="GraniteToolkit.Assets.granite_reversed.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj" />
+    <ProjectReference Include="..\Granite.Toolkit.UI\Granite.Toolkit.UI.csproj" />
+  </ItemGroup>
+
+</Project>

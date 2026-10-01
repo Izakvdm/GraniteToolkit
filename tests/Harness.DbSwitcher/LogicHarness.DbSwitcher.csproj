@@ -19,18 +19,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Shared toolkit code the module uses (pure files only). -->
-    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
-    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
-    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
-
-    <Compile Include="../../src/GraniteDbSwitcher/Models/GraniteInstall.cs" Link="Models/GraniteInstall.cs" />
     <Compile Include="../../src/GraniteDbSwitcher/Models/DatabaseInfo.cs" Link="Models/DatabaseInfo.cs" />
     <Compile Include="../../src/GraniteDbSwitcher/Core/ConnectionStringEditor.cs" Link="Core/ConnectionStringEditor.cs" />
     <Compile Include="../../src/GraniteDbSwitcher/Core/AppSettingsConnectionEditor.cs" Link="Core/AppSettingsConnectionEditor.cs" />
     <Compile Include="../../src/GraniteDbSwitcher/Core/AppConnectionState.cs" Link="Core/AppConnectionState.cs" />
     <Compile Include="../../src/GraniteDbSwitcher/Core/GraniteVersionRules.cs" Link="Core/GraniteVersionRules.cs" />
-    <Compile Include="../../src/GraniteDbSwitcher/Core/InstallDiscovery.cs" Link="Core/InstallDiscovery.cs" />
     <!-- Left out (need Windows, IIS, SQL Server or WinForms): ProcessRunner,
          IisService, SqlAccess, DatabaseCatalog, LoginAccess, SwitchRunner,
          SettingsStore, MainForm, Program. -->

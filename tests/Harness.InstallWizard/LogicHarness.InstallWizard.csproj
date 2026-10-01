@@ -20,14 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Shared toolkit code the module uses (pure files only). -->
-    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
-    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
-    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
 
     <Compile Include="../../src/GraniteInstallWizard/Models/GraniteComponent.cs" Link="Models/GraniteComponent.cs" />
     <Compile Include="../../src/GraniteInstallWizard/Models/InstallContext.cs" Link="Models/InstallContext.cs" />

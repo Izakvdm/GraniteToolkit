@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    Every LogicHarness links the pure (no Windows, IIS or SQL Server) shared
+    files from Granite.Toolkit.Core, so the harnesses keep running anywhere
+    with just the .NET SDK. Add a file here only if it has no Windows-only
+    dependencies.
+  -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Discovery/InstallDiscovery.cs" Link="Shared/InstallDiscovery.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Discovery/GraniteInstall.cs" Link="Shared/GraniteInstall.cs" />
+  </ItemGroup>
+
+</Project>

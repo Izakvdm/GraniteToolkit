@@ -1,17 +1,16 @@
 @echo off
-rem Builds the whole toolkit (shared core, UI, four modules, harnesses) and
-rem runs the LogicHarness checks that need no extra data. The Install and BI
-rem harnesses need real release/script folders; see README "Testing".
+rem Builds the whole toolkit and runs the logic harnesses that need no extra
+rem data. The Install and BI harnesses need real release/script folders;
+rem see README "Testing".
 setlocal
 cd /d "%~dp0"
 dotnet build GraniteToolkit.sln -c Release -nologo
 if errorlevel 1 goto :failed
-echo.
-echo === Shared core
-dotnet run --project tests\Harness.Core -c Release --no-build || goto :failed
-echo.
-echo === DB Switcher
-dotnet run --project tests\Harness.DbSwitcher -c Release --no-build || goto :failed
+for %%h in (Harness.Core Harness.Launcher Harness.DbSwitcher) do (
+  echo.
+  echo === %%h
+  dotnet run --project tests\%%h -c Release --no-build || goto :failed
+)
 echo.
 echo All checks passed.
 pause
