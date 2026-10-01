@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GraniteAttachInstaller</RootNamespace>
+    <AssemblyName>GraniteAttachInstaller</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Product metadata -->
+    <Product>Granite Attach Installer</Product>
+    <Company>Cradle Technology Services</Company>
+    <Version>0.1.0</Version>
+    <Description>Installs the Granite Attach app and database objects onto a GraniteWMS instance: picks the SQL Server/database, publishes the app under IIS, and (given a process name) sets up the process-step kit's stored procedures and WebTemplate.</Description>
+
+    <!-- Same reasoning as GraniteWMS Install Wizard's app.manifest: creating
+         IIS sites/app pools and writing under C:\inetpub requires elevation. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <!-- IIS is driven through appcmd.exe, not Microsoft.Web.Administration -
+         see the remarks on Core/IisCommands.cs (same reasoning, and mostly
+         the same commands, as the sibling GraniteWMS Install Wizard project). -->
+  </ItemGroup>
+
+</Project>

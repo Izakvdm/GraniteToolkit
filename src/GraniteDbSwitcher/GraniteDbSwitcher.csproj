@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GraniteDbSwitcher</RootNamespace>
+    <AssemblyName>GraniteDbSwitcher</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Product metadata -->
+    <Product>GraniteWMS DB Switcher</Product>
+    <Company>Cradle Technology Services</Company>
+    <Version>0.1.0</Version>
+    <Description>Points an installed GraniteWMS stack (Business API, Custodian, Process App) at a different database on the same SQL Server, for testing client databases without an IIS install per client.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+  </ItemGroup>
+
+</Project>

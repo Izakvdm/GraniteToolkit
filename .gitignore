@@ -1,0 +1,25 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+publish/
+dist/
+
+# Local build staging (copies of the NuGet cache etc.)
+.staging/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# Test / misc
+TestResults/
+*.log
+.DS_Store
+Thumbs.db

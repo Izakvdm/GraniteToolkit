@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GraniteInstallWizard</RootNamespace>
+    <AssemblyName>GraniteInstallWizard</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon></ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Product metadata -->
+    <Product>GraniteWMS Install Wizard</Product>
+    <Company>Cradle Technology Services</Company>
+    <Version>0.5.1</Version>
+    <Description>Replacement for Granite.Scaffolding.exe: installs the GraniteWMS core stack (Web Desktop, Business API, Custodian API, Process App) from a V6.0 or V7.0 release, with its database, IIS sites and HTTPS certificate.</Description>
+
+    <!-- Creating IIS sites/app pools, installing Windows features and the
+         .NET Hosting Bundle / URL Rewrite, and writing certificates to the
+         LocalMachine store all require elevation, so this wizard requests
+         it up front via app.manifest, matching the BI Deployment Wizard. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <!-- No Microsoft.Web.Administration reference (the skeleton's TODO):
+         IIS is driven through appcmd.exe and netsh instead. See the
+         remarks on Core/IisCommands.cs for why. -->
+  </ItemGroup>
+
+</Project>
