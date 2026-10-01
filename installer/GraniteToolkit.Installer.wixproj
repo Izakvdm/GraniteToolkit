@@ -18,6 +18,18 @@
     <ProductVersion Condition="'$(ProductVersion)' == ''">0.0.0</ProductVersion>
     <Manufacturer Condition="'$(Manufacturer)' == ''">Development build</Manufacturer>
     <DefineConstants>ProductVersion=$(ProductVersion);Manufacturer=$(Manufacturer);IconPath=$(IconPath)</DefineConstants>
+    <!--
+      ICE38, ICE43 and ICE57 treat the Start menu as a per-user folder and
+      want a per-user (HKCU) key path for any component that puts a shortcut
+      there. They don't take ALLUSERS into account, so they misfire on a
+      per-machine package like this one (Scope="perMachine" sets ALLUSERS=1,
+      so the shortcut goes in the All Users Start menu). The usual workaround,
+      an HKCU registry value as key path, would write into the installing
+      admin's own profile and be left behind when someone else uninstalls.
+      So the shortcut keeps the exe in Program Files as its key path and
+      only these three checks are switched off. Every other ICE still runs.
+    -->
+    <SuppressIces>ICE38;ICE43;ICE57</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>
