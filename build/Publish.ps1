@@ -147,6 +147,39 @@ foreach ($app in $apps) {
 }
 Write-Host "  $($owners.Count) files in the merged app folder."
 
+# Zips a folder. Compress-Archive gives up on the first file another process
+# has open (Defender scanning a just-copied DLL, the search indexer), so
+# each file is opened for shared reading and retried for a few seconds.
+function New-ZipFromFolder([string]$Folder, [string]$ZipPath) {
+    Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+    if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
+    $zipStream = [System.IO.File]::Open($ZipPath, [System.IO.FileMode]::CreateNew)
+    try {
+        $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
+        try {
+            foreach ($file in Get-ChildItem $Folder -Recurse -File | Sort-Object FullName) {
+                $entryName = $file.FullName.Substring($Folder.Length + 1).Replace('\', '/')
+                $source = $null
+                for ($attempt = 1; $null -eq $source; $attempt++) {
+                    try {
+                        $source = [System.IO.File]::Open($file.FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read,
+                            [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete)
+                    } catch {
+                        if ($attempt -ge 20) { throw "Couldn't read $($file.FullName) for the zip: $($_.Exception.Message)" }
+                        Start-Sleep -Milliseconds 500
+                    }
+                }
+                try {
+                    $entry = $archive.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+                    $entry.LastWriteTime = $file.LastWriteTime
+                    $target = $entry.Open()
+                    try { $source.CopyTo($target) } finally { $target.Dispose() }
+                } finally { $source.Dispose() }
+            }
+        } finally { $archive.Dispose() }
+    } finally { $zipStream.Dispose() }
+}
+
 # Files that belong to the developer-only feature: the module's own files.
 function Test-DeveloperFile([string]$rel) {
     foreach ($d in $developerOnly) { if ($rel -like "$d.*") { return $true } }
@@ -255,7 +288,7 @@ $zipSums = Get-ChildItem $zipSource -Recurse -File | Sort-Object FullName | ForE
 }
 Set-Content -Path (Join-Path $zipSource 'SHA256SUMS.txt') -Value $zipSums -Encoding UTF8
 $zip = Join-Path $out "GraniteToolkit-$version-portable.zip"
-Compress-Archive -Path (Join-Path $zipSource '*') -DestinationPath $zip -CompressionLevel Optimal
+New-ZipFromFolder -Folder $zipSource -ZipPath $zip
 
 $releaseSums = Get-ChildItem $out -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object Name | ForEach-Object {
     '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
