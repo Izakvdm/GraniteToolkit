@@ -193,7 +193,17 @@ if (-not $SkipMsi) {
         }
         $n++
         $id = "f$n"
-        $line = "      <Component Directory=`"$dirRef`"><File Id=`"$id`" Source=`"$([System.Security.SecurityElement]::Escape($file.FullName))`" KeyPath=`"yes`" /></Component>"
+        $source = [System.Security.SecurityElement]::Escape($file.FullName)
+        if ($rel -eq 'GraniteToolkit.exe') {
+            # The Start menu shortcut hangs off the exe's own component, so the
+            # component's key path is the file in Program Files (a separate
+            # shortcut component fails ICE38/43/57 in a per-machine package).
+            $line = "      <Component Directory=`"$dirRef`"><File Id=`"GraniteToolkitExe`" Source=`"$source`" KeyPath=`"yes`">" +
+                    "<Shortcut Id=`"ToolkitShortcut`" Directory=`"ProgramMenuFolder`" Name=`"GraniteWMS Toolkit`" Description=`"Dashboard and installers for GraniteWMS`" WorkingDirectory=`"INSTALLFOLDER`" Icon=`"GraniteToolkit.ico`" Advertise=`"no`" />" +
+                    "</File></Component>"
+        } else {
+            $line = "      <Component Directory=`"$dirRef`"><File Id=`"$id`" Source=`"$source`" KeyPath=`"yes`" /></Component>"
+        }
         if (-not $sub -and (Test-DeveloperFile $rel)) { [void]$dev.AppendLine($line) } else { [void]$core.AppendLine($line) }
     }
     $dirXml = New-Object System.Text.StringBuilder
