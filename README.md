@@ -62,6 +62,7 @@ Package versions are all in `Directory.Packages.props`. Module versions stay in 
 - **Client server:** run `GraniteToolkit-x.y.z.msi`. It installs to `C:\Program Files\Granite Toolkit`, adds a Start menu shortcut, and creates an admin-only `C:\ProgramData\Granite Toolkit`.
 - **Developer machine:** `msiexec /i GraniteToolkit-x.y.z.msi ADDLOCAL=ALL` adds DB Switcher.
 - **Upgrade:** run the newer MSI. Downgrades are refused.
+- **"The system administrator has set policies to prevent this installation" (error 1625):** the "Turn off Windows Installer" policy (`DisableMSI` under `HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer`) blocks installs that weren't deployed through policy. On a client server, ask their IT to deploy the MSI (Intune or Group Policy), or use the portable zip. On your own machine, set `DisableMSI` to 0 in an admin PowerShell, run `Restart-Service msiserver` (the service holds on to the old value), install, then set it back. `msiexec /i ... /l*v install.log` shows which policy refused it.
 - **No install allowed:** unzip the portable zip into a folder only administrators can change, such as `C:\Tools\Granite Toolkit`. The dashboard warns if the folder is writable by others.
 
 ## Testing
