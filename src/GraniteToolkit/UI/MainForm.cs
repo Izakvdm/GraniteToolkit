@@ -42,7 +42,7 @@ internal sealed class MainForm : Form
         Text = $"GraniteWMS Toolkit v{version}";
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(980, 640);
+        MinimumSize = new Size(980, 560);
         Size = new Size(1120, 760);
         BackColor = Theme.Page;
         Font = Theme.Body;
@@ -243,6 +243,7 @@ internal sealed class MainForm : Form
             _snapshot = snapshot;
             ShowStatus(snapshot);
             ShowTileStatus(snapshot);
+            FitToContent();
             _statusFooter.Text = $"Checked at {DateTime.Now:HH:mm:ss}.  Log: {_log.FilePath ?? "not written (see the warning above)"}";
             Log(new LogEntry(LogLevel.Info, $"Server checked: {snapshot.Installs.Count} GraniteWMS install(s), IIS {snapshot.IisVersion ?? "not installed"}."));
         }
@@ -256,6 +257,37 @@ internal sealed class MainForm : Form
         {
             _refresh.Enabled = _running is null;
         }
+    }
+
+    private bool _fitted;
+
+    /// <summary>
+    /// Sizes the window so the server list and every tile show without
+    /// scrolling: exactly on the first check, and only ever taller after
+    /// that (so a size the operator chose isn't undone). Never maximised,
+    /// and never taller than the screen's working area; on a screen too
+    /// small for everything, the lists scroll as before.
+    /// </summary>
+    private void FitToContent()
+    {
+        if (WindowState != FormWindowState.Normal) return;
+
+        int statusNeeded = _statusList.Padding.Vertical + _statusList.Controls.Cast<Control>().Sum(c => c.Height + c.Margin.Vertical);
+        int tilesNeeded = _tiles.Padding.Vertical + _tiles.Controls.Cast<Control>().Sum(c => c.Height + c.Margin.Vertical);
+        int growth = Math.Max(statusNeeded - _statusList.ClientSize.Height, tilesNeeded - _tiles.ClientSize.Height);
+        if (_fitted && growth <= 0) return;
+        _fitted = true;
+
+        var area = Screen.FromControl(this).WorkingArea;
+        int height = Math.Clamp(Height + growth, MinimumSize.Height, area.Height);
+        int width = Math.Min(Width, area.Width);
+        if (height == Height && width == Width) return;
+
+        Bounds = new Rectangle(
+            area.Left + (area.Width - width) / 2,
+            area.Top + (area.Height - height) / 2,
+            width, height);
+        SizeTiles();
     }
 
     private void ShowStatus(ServerSnapshot snapshot)
