@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace GraniteAttachInstaller.Core;
+namespace Granite.Toolkit.Core.Processes;
 
 public sealed record ProcessResult(int ExitCode, string Output)
 {
@@ -10,13 +10,15 @@ public sealed record ProcessResult(int ExitCode, string Output)
 }
 
 /// <summary>
-/// Runs appcmd, icacls, netsh and dotnet without a console window,
-/// capturing their output. Copied from the GraniteWMS Install Wizard's
-/// Core/ProcessRunner.cs unchanged apart from the namespace - same job,
-/// same external tools.
+/// Runs dism, appcmd, netsh, icacls, msiexec, dotnet and the Hosting Bundle
+/// installers without a console window, capturing their output. Shared by
+/// every toolkit module (was copied into each wizard before the toolkit).
 /// </summary>
 public static class ProcessRunner
 {
+    /// <param name="fileName">Executable path or name on PATH.</param>
+    /// <param name="arguments">One entry per argument; quoting is done by ProcessStartInfo.</param>
+    /// <param name="timeout">Kills the process if it runs longer. Installers get generous timeouts.</param>
     public static async Task<ProcessResult> RunAsync(string fileName, IEnumerable<string> arguments, TimeSpan timeout, CancellationToken token)
     {
         var psi = new ProcessStartInfo(fileName)
@@ -52,10 +54,12 @@ public static class ProcessRunner
             throw new TimeoutException($"{Path.GetFileName(fileName)} did not finish within {timeout.TotalMinutes:0} minutes.");
         }
 
+        // WaitForExitAsync returns before the async output readers drain.
         process.WaitForExit();
         lock (output) return new ProcessResult(process.ExitCode, output.ToString());
     }
 
+    /// <summary>Command line as it would be typed, for the log.</summary>
     public static string Describe(string fileName, IEnumerable<string> arguments) =>
         Path.GetFileName(fileName) + " " + string.Join(" ", arguments.Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
 }

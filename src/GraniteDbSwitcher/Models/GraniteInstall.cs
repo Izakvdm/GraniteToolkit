@@ -1,3 +1,5 @@
+using Granite.Toolkit.Core.Iis;
+
 namespace GraniteDbSwitcher.Models;
 
 public enum GraniteAppKind
@@ -7,9 +9,6 @@ public enum GraniteAppKind
     Custodian,
     ProcessApp
 }
-
-/// <summary>An IIS binding, e.g. https/*:40081:</summary>
-public sealed record IisBinding(string Protocol, string Address, int Port, string HostName);
 
 /// <summary>One Granite app found in IIS: its site, pool and folder.</summary>
 public sealed record GraniteApp(

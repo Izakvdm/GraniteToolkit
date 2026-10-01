@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>LogicHarness</RootNamespace>
+    <!--
+      Same idea as the install wizard's LogicHarness: compile and run the
+      switcher's pure logic for real, with no Windows, IIS or SQL Server.
+      Links the actual source files (no copies, no drift). Pass a folder of
+      real appsettings.json files (named v6-*.json / v7-*.json) to also run
+      the file edits against them; the release files aren't kept in the repo
+      because they carry the shipped passwords and ServiceStack licence.
+      No packages: connection strings are cross-checked with the in-box
+      System.Data.Common.DbConnectionStringBuilder.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared toolkit code the module uses (pure files only). -->
+    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
+    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
+    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
+
+    <Compile Include="../../src/GraniteDbSwitcher/Models/GraniteInstall.cs" Link="Models/GraniteInstall.cs" />
+    <Compile Include="../../src/GraniteDbSwitcher/Models/DatabaseInfo.cs" Link="Models/DatabaseInfo.cs" />
+    <Compile Include="../../src/GraniteDbSwitcher/Core/ConnectionStringEditor.cs" Link="Core/ConnectionStringEditor.cs" />
+    <Compile Include="../../src/GraniteDbSwitcher/Core/AppSettingsConnectionEditor.cs" Link="Core/AppSettingsConnectionEditor.cs" />
+    <Compile Include="../../src/GraniteDbSwitcher/Core/AppConnectionState.cs" Link="Core/AppConnectionState.cs" />
+    <Compile Include="../../src/GraniteDbSwitcher/Core/GraniteVersionRules.cs" Link="Core/GraniteVersionRules.cs" />
+    <Compile Include="../../src/GraniteDbSwitcher/Core/InstallDiscovery.cs" Link="Core/InstallDiscovery.cs" />
+    <!-- Left out (need Windows, IIS, SQL Server or WinForms): ProcessRunner,
+         IisService, SqlAccess, DatabaseCatalog, LoginAccess, SwitchRunner,
+         SettingsStore, MainForm, Program. -->
+  </ItemGroup>
+
+</Project>

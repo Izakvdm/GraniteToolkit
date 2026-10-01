@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -26,6 +26,11 @@
     <!-- IIS is driven through appcmd.exe, not Microsoft.Web.Administration -
          see the remarks on Core/IisCommands.cs (same reasoning, and mostly
          the same commands, as the sibling GraniteWMS Install Wizard project). -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj" />
+    <ProjectReference Include="..\Granite.Toolkit.UI\Granite.Toolkit.UI.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,9 +1,10 @@
 using Microsoft.Win32;
 
-namespace GraniteBiDeployWizard.Core;
+namespace Granite.Toolkit.Core.Sql;
 
 /// <summary>
-/// Finds SQL Server instances so Panel 1's server field can offer a
+/// Shared by every toolkit module that asks for a SQL Server.
+/// Finds SQL Server instances so a wizard's server field can offer a
 /// dropdown instead of asking the installer to already know (or go look
 /// up) the exact instance name. Two independent sources, since neither
 /// alone is reliable:

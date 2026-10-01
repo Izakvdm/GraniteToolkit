@@ -32,4 +32,9 @@
     <PackageReference Include="System.DirectoryServices.AccountManagement" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj" />
+    <ProjectReference Include="..\Granite.Toolkit.UI\Granite.Toolkit.UI.csproj" />
+  </ItemGroup>
+
 </Project>

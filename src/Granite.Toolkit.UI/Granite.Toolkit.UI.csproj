@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Windows Forms pieces every toolkit wizard shares. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Granite.Toolkit.UI</RootNamespace>
+    <Version>0.1.0</Version>
+    <Company>Cradle Technology Services</Company>
+    <Product>Granite Toolkit</Product>
+  </PropertyGroup>
+
+</Project>

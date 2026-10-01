@@ -36,14 +36,14 @@ public sealed class AttachAppDeployer
         }
 
         (bool siteListOk, string siteListOut) = await RunAppCmdAsync(IisCommands.ListSites(), token);
-        if (siteListOk && IisCommands.ParseSites(siteListOut).Any(s => string.Equals(s.Name, c.SiteName, StringComparison.OrdinalIgnoreCase)))
+        if (siteListOk && ParseSitesOrEmpty(siteListOut).Any(s => string.Equals(s.Name, c.SiteName, StringComparison.OrdinalIgnoreCase)))
         {
             Log(LogLevel.Detail, $"Stopping existing site '{c.SiteName}' before publishing, so it releases its file lock on the app folder...");
             await RunAppCmdAsync(IisCommands.StopSite(c.SiteName), token);
         }
 
         (bool poolListOk, string poolListOut) = await RunAppCmdAsync(IisCommands.ListAppPools(), token);
-        if (poolListOk && IisCommands.ParseAppPools(poolListOut).Contains(c.AppPoolName, StringComparer.OrdinalIgnoreCase))
+        if (poolListOk && ParseAppPoolNamesOrEmpty(poolListOut).Contains(c.AppPoolName, StringComparer.OrdinalIgnoreCase))
         {
             await RunAppCmdAsync(IisCommands.StopAppPool(c.AppPoolName), token);
         }
@@ -153,7 +153,7 @@ public sealed class AttachAppDeployer
         Log(LogLevel.Stage, "Setting up the IIS app pool and site ...");
 
         (bool poolListOk, string poolListOut) = await RunAppCmdAsync(IisCommands.ListAppPools(), token);
-        IReadOnlyList<string> existingPools = poolListOk ? IisCommands.ParseAppPools(poolListOut) : Array.Empty<string>();
+        IReadOnlyList<string> existingPools = poolListOk ? ParseAppPoolNamesOrEmpty(poolListOut) : Array.Empty<string>();
         if (existingPools.Contains(c.AppPoolName, StringComparer.OrdinalIgnoreCase))
         {
             Log(LogLevel.Detail, $"App pool '{c.AppPoolName}' already exists - reconfiguring it.");
@@ -167,7 +167,7 @@ public sealed class AttachAppDeployer
         }
 
         (bool siteListOk, string siteListOut) = await RunAppCmdAsync(IisCommands.ListSites(), token);
-        List<IisSite> existingSites = siteListOk ? IisCommands.ParseSites(siteListOut).ToList() : new List<IisSite>();
+        List<IisSite> existingSites = siteListOk ? ParseSitesOrEmpty(siteListOut).ToList() : new List<IisSite>();
         IisSite? matchingSite = existingSites.FirstOrDefault(s => string.Equals(s.Name, c.SiteName, StringComparison.OrdinalIgnoreCase));
 
         if (matchingSite is not null)
@@ -178,7 +178,7 @@ public sealed class AttachAppDeployer
         }
 
         int newId = existingSites.Count == 0 ? 100 : existingSites.Max(s => s.Id) + 1;
-        (bool addOk, string addMsg) = await RunAppCmdAsync(IisCommands.AddSite(c.SiteName, newId, c.PhysicalPath, c.Port), token);
+        (bool addOk, string addMsg) = await RunAppCmdAsync(IisCommands.AddSite(c.SiteName, newId, c.PhysicalPath, c.Port, protocol: "http"), token);
         if (!addOk) throw new InvalidOperationException($"Could not create site '{c.SiteName}': {addMsg}");
         Log(LogLevel.Success, $"Site '{c.SiteName}' created on port {c.Port} (id {newId}).");
 
@@ -188,7 +188,7 @@ public sealed class AttachAppDeployer
         if (!grantResult.Succeeded())
             Log(LogLevel.Warning, $"Could not grant the app pool write access to {c.PhysicalPath}: {grantResult.Output}. The app may fail to write logs - grant IIS AppPool\\{c.AppPoolName} Modify access to that folder by hand if it does.");
 
-        string ruleName = IisCommands.FirewallRuleName(c.Port);
+        string ruleName = FirewallRuleName(c.Port);
         var firewallCheck = await ProcessRunner.RunAsync("netsh.exe", IisCommands.ShowFirewallRule(ruleName), TimeSpan.FromSeconds(20), token);
         if (!firewallCheck.Succeeded())
         {
@@ -203,5 +203,27 @@ public sealed class AttachAppDeployer
         await RunAppCmdAsync(IisCommands.StartAppPool(c.AppPoolName), token);
         await RunAppCmdAsync(IisCommands.StartSite(c.SiteName), token);
         Log(LogLevel.Success, $"Site '{c.SiteName}' started.");
+    }
+
+    /// <summary>
+    /// Attach's firewall rule name. Kept exactly as before the toolkit so an
+    /// existing install's rule is still found (the core Granite sites use
+    /// IisCommands.FirewallRuleName, "Granite WMS - title (port)").
+    /// </summary>
+    internal static string FirewallRuleName(int port) => $"Granite Attach ({port})";
+
+    // The shared IisCommands parsers throw on malformed XML (the Install
+    // module relies on that). This installer has always treated an
+    // unreadable listing as "nothing there", so it keeps doing so.
+    private static IReadOnlyList<IisSite> ParseSitesOrEmpty(string xml)
+    {
+        try { return IisCommands.ParseSites(xml); }
+        catch (System.Xml.XmlException) { return Array.Empty<IisSite>(); }
+    }
+
+    private static IReadOnlyList<string> ParseAppPoolNamesOrEmpty(string xml)
+    {
+        try { return IisCommands.ParseAppPoolNames(xml); }
+        catch (System.Xml.XmlException) { return Array.Empty<string>(); }
     }
 }

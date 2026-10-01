@@ -18,9 +18,9 @@ namespace GraniteDbSwitcher.Core;
 public static class InstallDiscovery
 {
     public static IReadOnlyList<GraniteInstall> Build(
-        IReadOnlyList<IisSiteRow> sites,
-        IReadOnlyList<IisAppRow> apps,
-        IReadOnlyList<IisVdirRow> vdirs,
+        IReadOnlyList<IisSite> sites,
+        IReadOnlyList<IisApp> apps,
+        IReadOnlyList<IisVdir> vdirs,
         Func<string, bool> fileExists,
         Func<string, string?> readText,
         Func<string, string>? expandPath = null)

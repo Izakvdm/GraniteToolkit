@@ -1,0 +1,92 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{53524189-CE50-4574-97DA-FC8644BE36D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Granite.Toolkit.Core", "src\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj", "{011F6DC3-3E5D-4E35-B0C7-B926DC130744}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Granite.Toolkit.UI", "src\Granite.Toolkit.UI\Granite.Toolkit.UI.csproj", "{613ECDC9-A020-4342-9B66-9F1806B81297}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraniteAttachInstaller", "src\GraniteAttachInstaller\GraniteAttachInstaller.csproj", "{C5D3696F-282C-4AA9-8A62-5A24963599EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraniteBiDeployWizard", "src\GraniteBiDeployWizard\GraniteBiDeployWizard.csproj", "{4D619026-A5C4-4232-972A-269AA7DA3B73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraniteDbSwitcher", "src\GraniteDbSwitcher\GraniteDbSwitcher.csproj", "{8A051658-6D79-4A04-9328-8A8A7BF974E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraniteInstallWizard", "src\GraniteInstallWizard\GraniteInstallWizard.csproj", "{1BA063B6-9E8F-4615-A463-2CB7994D838A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{12B8E8F5-4862-4B10-B301-1C79F9C08D9E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicHarness.BiDeploy", "tests\Harness.BiDeploy\LogicHarness.BiDeploy.csproj", "{57AE77FD-CD04-4A51-B8D2-E410817908C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicHarness.Core", "tests\Harness.Core\LogicHarness.Core.csproj", "{73E368B1-3C10-49D0-9B70-A926ACBD50BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicHarness.DbSwitcher", "tests\Harness.DbSwitcher\LogicHarness.DbSwitcher.csproj", "{4F728E3D-75FA-46D8-B087-4385C75F200A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicHarness.InstallWizard", "tests\Harness.InstallWizard\LogicHarness.InstallWizard.csproj", "{BB444322-0B9D-482A-86AF-248DD65E23B8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{011F6DC3-3E5D-4E35-B0C7-B926DC130744}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{011F6DC3-3E5D-4E35-B0C7-B926DC130744}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{011F6DC3-3E5D-4E35-B0C7-B926DC130744}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{011F6DC3-3E5D-4E35-B0C7-B926DC130744}.Release|Any CPU.Build.0 = Release|Any CPU
+		{613ECDC9-A020-4342-9B66-9F1806B81297}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{613ECDC9-A020-4342-9B66-9F1806B81297}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{613ECDC9-A020-4342-9B66-9F1806B81297}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{613ECDC9-A020-4342-9B66-9F1806B81297}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5D3696F-282C-4AA9-8A62-5A24963599EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5D3696F-282C-4AA9-8A62-5A24963599EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5D3696F-282C-4AA9-8A62-5A24963599EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5D3696F-282C-4AA9-8A62-5A24963599EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D619026-A5C4-4232-972A-269AA7DA3B73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D619026-A5C4-4232-972A-269AA7DA3B73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D619026-A5C4-4232-972A-269AA7DA3B73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D619026-A5C4-4232-972A-269AA7DA3B73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A051658-6D79-4A04-9328-8A8A7BF974E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A051658-6D79-4A04-9328-8A8A7BF974E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A051658-6D79-4A04-9328-8A8A7BF974E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A051658-6D79-4A04-9328-8A8A7BF974E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BA063B6-9E8F-4615-A463-2CB7994D838A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BA063B6-9E8F-4615-A463-2CB7994D838A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BA063B6-9E8F-4615-A463-2CB7994D838A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BA063B6-9E8F-4615-A463-2CB7994D838A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57AE77FD-CD04-4A51-B8D2-E410817908C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57AE77FD-CD04-4A51-B8D2-E410817908C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57AE77FD-CD04-4A51-B8D2-E410817908C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57AE77FD-CD04-4A51-B8D2-E410817908C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73E368B1-3C10-49D0-9B70-A926ACBD50BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73E368B1-3C10-49D0-9B70-A926ACBD50BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73E368B1-3C10-49D0-9B70-A926ACBD50BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73E368B1-3C10-49D0-9B70-A926ACBD50BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F728E3D-75FA-46D8-B087-4385C75F200A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F728E3D-75FA-46D8-B087-4385C75F200A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F728E3D-75FA-46D8-B087-4385C75F200A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F728E3D-75FA-46D8-B087-4385C75F200A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB444322-0B9D-482A-86AF-248DD65E23B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB444322-0B9D-482A-86AF-248DD65E23B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB444322-0B9D-482A-86AF-248DD65E23B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB444322-0B9D-482A-86AF-248DD65E23B8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{011F6DC3-3E5D-4E35-B0C7-B926DC130744} = {53524189-CE50-4574-97DA-FC8644BE36D8}
+		{613ECDC9-A020-4342-9B66-9F1806B81297} = {53524189-CE50-4574-97DA-FC8644BE36D8}
+		{C5D3696F-282C-4AA9-8A62-5A24963599EB} = {53524189-CE50-4574-97DA-FC8644BE36D8}
+		{4D619026-A5C4-4232-972A-269AA7DA3B73} = {53524189-CE50-4574-97DA-FC8644BE36D8}
+		{8A051658-6D79-4A04-9328-8A8A7BF974E3} = {53524189-CE50-4574-97DA-FC8644BE36D8}
+		{1BA063B6-9E8F-4615-A463-2CB7994D838A} = {53524189-CE50-4574-97DA-FC8644BE36D8}
+		{57AE77FD-CD04-4A51-B8D2-E410817908C4} = {12B8E8F5-4862-4B10-B301-1C79F9C08D9E}
+		{73E368B1-3C10-49D0-9B70-A926ACBD50BD} = {12B8E8F5-4862-4B10-B301-1C79F9C08D9E}
+		{4F728E3D-75FA-46D8-B087-4385C75F200A} = {12B8E8F5-4862-4B10-B301-1C79F9C08D9E}
+		{BB444322-0B9D-482A-86AF-248DD65E23B8} = {12B8E8F5-4862-4B10-B301-1C79F9C08D9E}
+	EndGlobalSection
+EndGlobal

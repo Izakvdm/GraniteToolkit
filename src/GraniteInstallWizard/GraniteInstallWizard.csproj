@@ -31,4 +31,9 @@
          remarks on Core/IisCommands.cs for why. -->
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj" />
+    <ProjectReference Include="..\Granite.Toolkit.UI\Granite.Toolkit.UI.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
-namespace GraniteInstallWizard.Core;
+namespace Granite.Toolkit.Core.Net;
 
 /// <summary>
-/// This server's names and IPv4 addresses, for Step 4's address list and
-/// Step 5's certificate names.
+/// This server's names, IPv4 addresses and listening ports: for the Install
+/// module's address list and certificate names, and Attach's PublicBaseUrl.
 /// </summary>
 public static class LocalAddressDiscovery
 {

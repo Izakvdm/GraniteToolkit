@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Code every toolkit module shares: running external tools, the log model,
+    appcmd/netsh/icacls commands and their parsers, SQL Server instance
+    discovery and this machine's addresses. No WinForms here (that lives in
+    Granite.Toolkit.UI), so the pure files can also be linked straight into
+    the net8.0 LogicHarness projects, which run without Windows.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Granite.Toolkit.Core</RootNamespace>
+    <Version>0.1.0</Version>
+    <Company>Cradle Technology Services</Company>
+    <Product>Granite Toolkit</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+  </ItemGroup>
+
+</Project>

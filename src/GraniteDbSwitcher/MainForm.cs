@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using GraniteDbSwitcher.Core;
 using GraniteDbSwitcher.Models;
-using LogLevel = GraniteDbSwitcher.Models.LogLevel;
+using LogLevel = Granite.Toolkit.Core.Logging.LogLevel;
 
 namespace GraniteDbSwitcher;
 

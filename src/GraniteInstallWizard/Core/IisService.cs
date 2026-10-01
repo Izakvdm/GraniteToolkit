@@ -31,7 +31,7 @@ public sealed class IisService
     {
         if (!IisInstalled) return Array.Empty<string>();
         var r = await ProcessRunner.RunAsync(IisCommands.AppCmdPath, IisCommands.ListAppPools(), TimeSpan.FromMinutes(1), token);
-        return r.ExitCode == 0 ? IisCommands.ParseAppPools(r.Output) : Array.Empty<string>();
+        return r.ExitCode == 0 ? IisCommands.ParseAppPoolNames(r.Output) : Array.Empty<string>();
     }
 
     private async Task<ProcessResult> RunAsync(string exe, string[] args, CancellationToken token, bool mustSucceed = true)

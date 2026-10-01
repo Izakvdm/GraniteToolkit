@@ -1,17 +1,26 @@
 using System.Xml.Linq;
 
-namespace GraniteInstallWizard.Core;
+namespace Granite.Toolkit.Core.Iis;
 
-/// <summary>An existing IIS site, as reported by appcmd list site /xml.</summary>
-public sealed record IisSite(string Name, int Id, IReadOnlyList<IisBinding> Bindings);
+/// <summary>An existing IIS site, as reported by appcmd list site /xml. State is "Started", "Stopped" or empty.</summary>
+public sealed record IisSite(string Name, int Id, IReadOnlyList<IisBinding> Bindings, string State = "");
 
 /// <summary>One site binding, e.g. https/*:40080:</summary>
 public sealed record IisBinding(string Protocol, string Address, int Port, string HostName);
 
+/// <summary>An IIS application, as reported by appcmd list app /xml.</summary>
+public sealed record IisApp(string AppName, string SiteName, string AppPool, string Path);
+
+/// <summary>A virtual directory, as reported by appcmd list vdir /xml.</summary>
+public sealed record IisVdir(string AppName, string Path, string PhysicalPath);
+
+/// <summary>An app pool, as reported by appcmd list apppool /xml.</summary>
+public sealed record IisAppPool(string Name, string State);
+
 /// <summary>
-/// Builds the appcmd.exe / netsh.exe / icacls.exe argument lists the
-/// installer runs, and parses appcmd's XML output. Pure, so the
-/// LogicHarness can check every command without touching IIS.
+/// Builds the appcmd.exe / netsh.exe / icacls.exe argument lists every
+/// toolkit module runs, and parses appcmd's XML output. Pure, so the
+/// LogicHarness projects can check every command without touching IIS.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -37,7 +46,13 @@ public static class IisCommands
 
     public static string[] ListSites() => new[] { "list", "site", "/xml" };
 
+    public static bool AppCmdExists() => File.Exists(AppCmdPath);
+
     public static string[] ListAppPools() => new[] { "list", "apppool", "/xml" };
+
+    public static string[] ListApps() => new[] { "list", "app", "/xml" };
+
+    public static string[] ListVdirs() => new[] { "list", "vdir", "/xml" };
 
     /// <summary>
     /// ASP.NET Core apps run through the ASP.NET Core Module, so the pool
@@ -69,13 +84,18 @@ public static class IisCommands
     /// Explicit /id avoids IIS picking one itself (the WebAdministration
     /// PowerShell equivalent fails outright on a server with no sites).
     /// </summary>
-    public static string[] AddSite(string site, int id, string physicalPath, int port) => new[]
+    /// <remarks>
+    /// <paramref name="protocol"/> is https for the core Granite sites (the
+    /// Install module binds a certificate) and http for Attach, which stays
+    /// on the LAN with no certificate step.
+    /// </remarks>
+    public static string[] AddSite(string site, int id, string physicalPath, int port, string protocol = "https") => new[]
     {
         "add", "site",
         $"/name:{site}",
         $"/id:{id}",
         $"/physicalPath:{physicalPath}",
-        $"/bindings:https/*:{port}:"
+        $"/bindings:{protocol}/*:{port}:"
     };
 
     public static string[] SetAppPoolForRootApp(string site, string pool) => new[]
@@ -146,31 +166,54 @@ public static class IisCommands
 
     public static string FirewallRuleName(string title, int port) => $"Granite WMS - {title} ({port})";
 
-    /// <summary>Parses appcmd list site /xml.</summary>
-    public static IReadOnlyList<IisSite> ParseSites(string xml)
+    /// <summary>
+    /// The XML part of appcmd's output. Anything before the first '<' (a
+    /// stray warning line) is skipped; output with no XML at all (appcmd's
+    /// "ERROR ( message:... )") gives no rows. Malformed XML still throws,
+    /// so a caller never mistakes a broken listing for an empty server.
+    /// </summary>
+    private static IEnumerable<XElement> Rows(string xml, string element)
     {
-        var result = new List<IisSite>();
-        if (string.IsNullOrWhiteSpace(xml)) return result;
-        var doc = XDocument.Parse(xml);
-        foreach (var el in doc.Descendants("SITE"))
-        {
-            string name = (string?)el.Attribute("SITE.NAME") ?? string.Empty;
-            int.TryParse((string?)el.Attribute("SITE.ID"), out int id);
-            string bindings = (string?)el.Attribute("bindings") ?? string.Empty;
-            result.Add(new IisSite(name, id, ParseBindings(bindings)));
-        }
-        return result;
+        if (string.IsNullOrWhiteSpace(xml)) return Array.Empty<XElement>();
+        int start = xml.IndexOf('<');
+        if (start < 0) return Array.Empty<XElement>();
+        return XDocument.Parse(xml[start..]).Descendants(element);
     }
 
-    /// <summary>Parses appcmd list apppool /xml into pool names.</summary>
-    public static IReadOnlyList<string> ParseAppPools(string xml)
-    {
-        if (string.IsNullOrWhiteSpace(xml)) return Array.Empty<string>();
-        return XDocument.Parse(xml).Descendants("APPPOOL")
-            .Select(e => (string?)e.Attribute("APPPOOL.NAME") ?? string.Empty)
-            .Where(n => n.Length > 0)
+    private static string Attr(XElement e, string name) => (string?)e.Attribute(name) ?? string.Empty;
+
+    /// <summary>Parses appcmd list site /xml.</summary>
+    public static IReadOnlyList<IisSite> ParseSites(string xml) =>
+        Rows(xml, "SITE")
+            .Select(e => new IisSite(
+                Attr(e, "SITE.NAME"),
+                int.TryParse(Attr(e, "SITE.ID"), out int id) ? id : 0,
+                ParseBindings(Attr(e, "bindings")),
+                Attr(e, "state")))
             .ToList();
-    }
+
+    /// <summary>Parses appcmd list apppool /xml into pools with their state.</summary>
+    public static IReadOnlyList<IisAppPool> ParseAppPools(string xml) =>
+        Rows(xml, "APPPOOL")
+            .Select(e => new IisAppPool(Attr(e, "APPPOOL.NAME"), Attr(e, "state")))
+            .Where(p => p.Name.Length > 0)
+            .ToList();
+
+    /// <summary>Parses appcmd list apppool /xml into pool names only.</summary>
+    public static IReadOnlyList<string> ParseAppPoolNames(string xml) =>
+        ParseAppPools(xml).Select(p => p.Name).ToList();
+
+    /// <summary>Parses appcmd list app /xml.</summary>
+    public static IReadOnlyList<IisApp> ParseApps(string xml) =>
+        Rows(xml, "APP")
+            .Select(e => new IisApp(Attr(e, "APP.NAME"), Attr(e, "SITE.NAME"), Attr(e, "APPPOOL.NAME"), Attr(e, "path")))
+            .ToList();
+
+    /// <summary>Parses appcmd list vdir /xml.</summary>
+    public static IReadOnlyList<IisVdir> ParseVdirs(string xml) =>
+        Rows(xml, "VDIR")
+            .Select(e => new IisVdir(Attr(e, "APP.NAME"), Attr(e, "path"), Attr(e, "physicalPath")))
+            .ToList();
 
     /// <summary>"https/*:40080:,http/*:80:" into bindings. IPv6 addresses contain colons, so the port is the second-last field.</summary>
     public static IReadOnlyList<IisBinding> ParseBindings(string bindings)

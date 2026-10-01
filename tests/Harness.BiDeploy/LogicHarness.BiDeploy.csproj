@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>LogicHarness</RootNamespace>
+    <!--
+      This project exists only to compile and run the wizard's engine code
+      for real, without the two NuGet packages (Microsoft.Data.SqlClient,
+      TaskScheduler) or the Windows Desktop workload the full GUI needs,
+      since neither is reachable from this sandbox (nuget.org and every
+      mirror tried are blocked by the network policy). It links the actual
+      source files from the real project (no copies, no drift) and excludes
+      only the three files that need those unavailable packages.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared toolkit code the module uses (pure files only). -->
+    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
+    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
+    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
+
+    <Compile Include="../../src/GraniteBiDeployWizard/Models/DeploymentContext.cs" Link="Models/DeploymentContext.cs" />
+    <Compile Include="../../src/GraniteBiDeployWizard/Models/ScriptFileItem.cs" Link="Models/ScriptFileItem.cs" />
+
+    <Compile Include="../../src/GraniteBiDeployWizard/Core/NaturalFileNameComparer.cs" Link="Core/NaturalFileNameComparer.cs" />
+    <Compile Include="../../src/GraniteBiDeployWizard/Core/PathHelper.cs" Link="Core/PathHelper.cs" />
+    <Compile Include="../../src/GraniteBiDeployWizard/Core/ScriptBatchParser.cs" Link="Core/ScriptBatchParser.cs" />
+    <Compile Include="../../src/GraniteBiDeployWizard/Core/ScriptFileScanner.cs" Link="Core/ScriptFileScanner.cs" />
+    <Compile Include="../../src/GraniteBiDeployWizard/Core/BatchFileGenerator.cs" Link="Core/BatchFileGenerator.cs" />
+    <!-- Excluded (need NuGet packages unavailable in this sandbox):
+         Core/SqlConnectionFactory.cs, Core/DeploymentRunner.cs (Microsoft.Data.SqlClient)
+         Core/ScheduledTaskService.cs (TaskScheduler)
+         all of UI/ and MainForm.cs, Program.cs (System.Windows.Forms) -->
+  </ItemGroup>
+
+</Project>

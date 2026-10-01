@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Checks for the behaviour that changed when the four modules' copies were
+    merged into Granite.Toolkit.Core: one IisSite record (with State), app
+    pools as rows or names, http sites for Attach, appcmd error text giving
+    no rows, and the merged LogLevel. Links the pure shared files, so it
+    runs anywhere with no Windows, IIS or SQL Server.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>LogicHarness.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../src/Granite.Toolkit.Core/Logging/LogEntry.cs" Link="Shared/LogEntry.cs" />
+    <Compile Include="../../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
+    <Compile Include="../HarnessGlobalUsings.cs" Link="Shared/HarnessGlobalUsings.cs" />
+  </ItemGroup>
+
+</Project>
