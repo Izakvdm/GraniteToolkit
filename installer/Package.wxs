@@ -58,7 +58,7 @@
 
     <StandardDirectory Id="ProgramMenuFolder" />
 
-    <Feature Id="Core" Title="GraniteWMS Toolkit" Description="The dashboard and the Install, BI, Attach and NiFi Deploy modules." Level="1" AllowAbsent="no">
+    <Feature Id="Core" Title="GraniteWMS Toolkit" Description="The dashboard and the Install, BI and NiFi Deploy modules." Level="1" AllowAbsent="no">
       <ComponentGroupRef Id="CoreFiles" />
       <ComponentRef Id="DataFolders" />
     </Feature>

@@ -7,7 +7,6 @@ Manuals, release notes and the design notes each module built up before it moved
 | `InstallWizard` | Operator manual v0.5.1 (Word, PDF); design notes and version history up to v0.5.1 |
 | `BiDeploy` | Operator manual v1.6.0 (Word, PDF); release notes v1.5.4 to v1.6.0; design notes and history; `Check_Sync_Log_Health.sql` |
 | `DbSwitcher` | Design notes and history up to v0.1.0 (how installs and database versions are detected) |
-| `AttachInstaller` | The installer's design notes from the Granite Attach repo |
 | `NiFiDeploy` | Design notes for the CSV import framework; the four sample CSVs for testing each feed; the feed template, the SQL login script and the clean-up script for the old design (not deployed by the wizard) |
 
 The NiFi feed SQL and the flow that the wizard deploys are in `src/GraniteNiFiDeploy/Resources`. That copy is the one to change.

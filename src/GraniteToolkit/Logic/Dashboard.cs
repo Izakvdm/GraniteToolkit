@@ -128,9 +128,6 @@ public static class Dashboard
             ModuleId.Bi => s.BiSyncTasks is { Count: > 0 }
                 ? new(id, "A BI sync task is already scheduled here.", false)
                 : new(id, hasGranite ? "GraniteWMS is installed. BI can be deployed against its database." : "Needs a GraniteWMS database to report on.", false),
-            ModuleId.Attach => s.AttachSites.Count > 0
-                ? new(id, "Already installed: " + string.Join(", ", s.AttachSites), false)
-                : new(id, hasGranite ? "Not installed yet." : "Needs a GraniteWMS install first.", false),
             ModuleId.NiFi => s.NiFiServices.Count > 0
                 ? new(id, "Already installed: " + string.Join(", ", s.NiFiServices.Select(n => $"service {n.ServiceName}{(n.IsRunning ? "" : " (not running)")}")), false)
                 : new(id, hasGranite ? "Not installed yet. Needs the four downloads (NiFi, JDK, NSSM, JDBC driver)." : "Needs a GraniteWMS database to import into.", false),

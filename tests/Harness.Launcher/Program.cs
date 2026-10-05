@@ -81,7 +81,7 @@ Check(rows.Any(r => r.Area == "IIS" && r.State == HealthState.Missing), "no IIS:
 Check(!rows.Any(r => r.Title == "URL Rewrite"), "no IIS: URL Rewrite not listed");
 Check(rows.Any(r => r.Area == "GraniteWMS" && r.State == HealthState.Info), "no IIS: no Granite is information, not an error");
 Check(Dashboard.ForModule(ModuleId.Install, bare).Suggested, "bare server: Install suggested");
-Check(!Dashboard.ForModule(ModuleId.Bi, bare).Suggested && !Dashboard.ForModule(ModuleId.Attach, bare).Suggested, "bare server: only Install suggested");
+Check(!Dashboard.ForModule(ModuleId.Bi, bare).Suggested && !Dashboard.ForModule(ModuleId.NiFi, bare).Suggested, "bare server: only Install suggested");
 
 var iisNoGranite = bare with { IisVersion = "10.0", UrlRewrite = false, AspNetCore8 = "8.0.11", AspNetCoreModule = false };
 var r2 = Dashboard.StatusRows(iisNoGranite);
@@ -107,7 +107,8 @@ Check(r3.Any(r => r.Area == "GraniteWMS" && r.State == HealthState.Attention && 
 Check(r3.Any(r => r.Title == "Granite Attach" && r.State == HealthState.Ok), "Attach found");
 Check(r3.Any(r => r.Title == "BI sync" && r.State == HealthState.Ok), "BI task found");
 Check(!Dashboard.ForModule(ModuleId.Install, installed).Suggested, "with Granite installed, Install isn't suggested");
-Check(Dashboard.ForModule(ModuleId.Attach, installed).Line.StartsWith("Already installed"), "Attach tile says already installed");
+// Granite Attach is a separate product (2026-10-05): the dashboard only reports it, read-only, and has no tile for it.
+Check(!ModuleCatalog.All.Any(m => m.ExeName.Contains("Attach", StringComparison.OrdinalIgnoreCase)), "no Attach module in the toolkit");
 Check(Dashboard.ForModule(ModuleId.Bi, installed).Line.Contains("already scheduled"), "BI tile says already scheduled");
 
 var unreadable = iisNoGranite with { IisScanError = "appcmd failed", BiSyncTasks = null };

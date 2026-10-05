@@ -1,6 +1,6 @@
 # GraniteWMS Toolkit
 
-One install for the GraniteWMS installer tools. A dashboard shows what's on the server and opens the right module: Install GraniteWMS, Deploy BI reporting, Add Granite Attach, Deploy NiFi integration, plus DB Switcher as an optional developer tool. All of them share one core library and ship as one signed MSI.
+One install for the GraniteWMS installer tools. A dashboard shows what's on the server and opens the right module: Install GraniteWMS, Deploy BI reporting, Deploy NiFi integration, plus DB Switcher as an optional developer tool. All of them share one core library and ship as one signed MSI.
 
 > **Status (v0.2.0, 2026-10-02): NiFi Deploy added as a module; not yet run on Windows.**
 > NiFi Deploy, the launcher changes and the shared-core changes were compiled with the C# compiler (Roslyn) against the .NET 8 reference assemblies and the Windows Forms and SqlClient assemblies from the 0.1.1 build: **0 warnings, 0 errors** for Core, UI, the dashboard, Attach and NiFi Deploy. Not yet built with `dotnet build` (no SDK or NuGet access in that session). Harnesses: Core **21/0**, Launcher **58/0**, NiFi Deploy **112/0**.
@@ -21,7 +21,6 @@ Security design and the release checklist are in [SECURITY.md](SECURITY.md).
 | `src/Granite.Toolkit.UI` | Shared Windows Forms wizard base class |
 | `src/GraniteInstallWizard` | Core stack installer, v0.5.2 |
 | `src/GraniteBiDeployWizard` | BI deployment wizard, v1.6.1 |
-| `src/GraniteAttachInstaller` | Granite Attach installer, v0.1.1 |
 | `src/GraniteNiFiDeploy` | NiFi Deploy: Apache NiFi and the Granite CSV import, v0.1.0 |
 | `src/GraniteDbSwitcher` | Developer tool, v0.1.1 |
 | `tests/Harness.*` | Logic harnesses that run with only the .NET SDK |
@@ -107,6 +106,9 @@ Package versions are all in `Directory.Packages.props`. Module versions stay in 
 
 ## Changes in this version
 
+**0.3.0** (2026-10-05)
+- **Granite Attach is no longer part of the toolkit.** It's a separate commercial product, so its installer moved back to the Granite Attach repo (as standalone v0.2.0) and isn't in the toolkit's solution, MSI or portable zip any more. The dashboard still shows, read-only, whether Attach is installed on a server, but has no tile for it. The harness checks that no Attach module is in the catalog. MSIs and zips from 0.1.0 to 0.2.1 still contain the Attach installer: don't hand those out.
+
 **0.2.1** (first Windows run of NiFi Deploy, 2026-10-04)
 - **Tested on Ultra (Windows 11, SQL Server 2022 Express, NiFi 2.11.0, Java 26):** the service installs and starts, NiFi connects to the Granite database, and all four sample files import (MasterItem 3 inserted, TradingPartner 2 inserted, PurchaseOrder 1 order and 2 lines, SalesOrder 2 orders and 3 lines). Orders whose trading partner doesn't exist yet are refused with a clear message, as designed. The two SQL fixes below were applied to Ultra by running the feed scripts by hand; the wizard itself still needs a rerun from a 0.2.1 build.
 - **NiFi Deploy 0.1.1:** the service stopped straight away ("Unexpected status SERVICE_STOPPED in response to START control"). NSSM writes the service's output to `logs\service.log` but doesn't create the folder, and the NiFi zip has no `logs` folder (NiFi makes it on its first run). The `logs` and `run` folders are now created before the service is installed, and the harness checks that every NSSM output folder is on that list.
@@ -131,7 +133,7 @@ Package versions are all in `Directory.Packages.props`. Module versions stay in 
 - **Install Wizard 0.5.2:** the release extraction and log folders in ProgramData are admin-only. An extraction from a folder that was open is never reused. A setup problem shows as an error on Step 6 instead of crashing the wizard.
 - **BI Deploy 1.6.1:** `Run_BI_Sync.bat` now goes in `C:\ProgramData\Granite BI Deploy\Tasks\<BI database>` (admin-only), and the scheduled task runs there, not in the script folder. Re-running the wizard on a server updates the existing task to the new location. The old .bat in the script folder isn't used any more and can be deleted.
 - **DB Switcher 0.1.1:** settings and logs are kept in an admin-only folder. Settings from a folder that was open are ignored.
-- **Attach installer 0.1.1:** targets .NET 8, the same as the rest.
+- **Attach installer 0.1.1:** targets .NET 8, the same as the rest. (Moved out of the toolkit in 0.3.0.)
 
 ## Confirm on the next run
 

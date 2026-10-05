@@ -56,7 +56,7 @@ $root = Split-Path $PSScriptRoot -Parent
 Import-Module (Join-Path $PSScriptRoot 'Signing.psm1') -Force
 if (-not $SigningConfig) { $SigningConfig = Join-Path $PSScriptRoot 'signing.json' }
 
-$apps = @('GraniteToolkit', 'GraniteInstallWizard', 'GraniteBiDeployWizard', 'GraniteAttachInstaller', 'GraniteNiFiDeploy', 'GraniteDbSwitcher')
+$apps = @('GraniteToolkit', 'GraniteInstallWizard', 'GraniteBiDeployWizard', 'GraniteNiFiDeploy', 'GraniteDbSwitcher')
 $developerOnly = @('GraniteDbSwitcher')
 $release = $Sign -ne 'None'
 
