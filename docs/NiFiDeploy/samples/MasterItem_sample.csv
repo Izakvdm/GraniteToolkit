@@ -1,0 +1,4 @@
+Code,FormattedCode,Description,UOM,isActive
+ITEM001,ITEM001,Blue widget 10mm,EA,1
+ITEM002,ITEM002,Red widget 12mm,EA,true
+ITEM003,ITEM003,Packing tape 48mm,ROLL,Y
