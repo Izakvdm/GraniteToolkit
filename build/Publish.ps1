@@ -61,6 +61,21 @@ $developerOnly = @('GraniteDbSwitcher')
 $release = $Sign -ne 'None'
 
 function Step($text) { Write-Host ''; Write-Host "=== $text" -ForegroundColor Cyan }
+# SHA-256 of a file as lowercase hex, straight from .NET. Not Get-FileHash:
+# in Windows PowerShell 5.1 that is a script function in the
+# Microsoft.PowerShell.Utility module, and it disappears when powershell.exe
+# is started from PowerShell 7 (which passes its own PSModulePath down, so
+# 5.1 can't load its Utility module). Seen on Ultra, 2026-10-05.
+function Get-Sha256([string]$Path) {
+    $stream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { return ([System.BitConverter]::ToString($sha.ComputeHash($stream)) -replace '-', '').ToLowerInvariant() }
+        finally { $sha.Dispose() }
+    }
+    finally { $stream.Dispose() }
+}
+
 function Invoke-Checked {
     param([string]$What, [scriptblock]$Command)
     & $Command
@@ -134,7 +149,7 @@ foreach ($app in $apps) {
     $from = Join-Path $work "publish\$app"
     foreach ($file in Get-ChildItem $from -Recurse -File) {
         $rel = $file.FullName.Substring($from.Length + 1)
-        $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash
+        $hash = Get-Sha256 $file.FullName
         if ($owners.ContainsKey($rel)) {
             if ($owners[$rel].Hash -ne $hash) { throw "$rel differs between $($owners[$rel].App) and $app. Pin the package version in Directory.Packages.props." }
             continue
@@ -202,7 +217,7 @@ if ($release) {
 
 # Checksums of the installed files (shipped inside the MSI and the zip).
 $appSums = Get-ChildItem $appDir -Recurse -File | Sort-Object FullName | ForEach-Object {
-    '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.FullName.Substring($appDir.Length + 1)
+    '{0}  {1}' -f (Get-Sha256 $_.FullName), $_.FullName.Substring($appDir.Length + 1)
 }
 Set-Content -Path (Join-Path $appDir 'SHA256SUMS.txt') -Value $appSums -Encoding UTF8
 
@@ -284,14 +299,14 @@ New-Item -ItemType Directory -Force -Path $zipSource | Out-Null
 Get-ChildItem $appDir -Force | Where-Object { -not (Test-DeveloperFile $_.Name) -and $_.Name -ne 'SHA256SUMS.txt' } |
     Copy-Item -Destination $zipSource -Recurse
 $zipSums = Get-ChildItem $zipSource -Recurse -File | Sort-Object FullName | ForEach-Object {
-    '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.FullName.Substring($zipSource.Length + 1)
+    '{0}  {1}' -f (Get-Sha256 $_.FullName), $_.FullName.Substring($zipSource.Length + 1)
 }
 Set-Content -Path (Join-Path $zipSource 'SHA256SUMS.txt') -Value $zipSums -Encoding UTF8
 $zip = Join-Path $out "GraniteToolkit-$version-portable.zip"
 New-ZipFromFolder -Folder $zipSource -ZipPath $zip
 
 $releaseSums = Get-ChildItem $out -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object Name | ForEach-Object {
-    '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+    '{0}  {1}' -f (Get-Sha256 $_.FullName), $_.Name
 }
 Set-Content -Path (Join-Path $out 'SHA256SUMS.txt') -Value $releaseSums -Encoding UTF8
 

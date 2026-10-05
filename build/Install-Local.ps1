@@ -70,6 +70,21 @@ $policyValue = 'DisableMSI'
 $pendingKey  = 'HKLM:\SOFTWARE\Granite Toolkit\PendingPolicyRestore'
 
 function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
+# SHA-256 of a file as lowercase hex, straight from .NET. Not Get-FileHash:
+# in Windows PowerShell 5.1 that is a script function in the
+# Microsoft.PowerShell.Utility module, and it disappears when powershell.exe
+# is started from PowerShell 7 (which passes its own PSModulePath down, so
+# 5.1 can't load its Utility module). Seen on Ultra, 2026-10-05.
+function Get-Sha256([string]$Path) {
+    $stream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { return ([System.BitConverter]::ToString($sha.ComputeHash($stream)) -replace '-', '').ToLowerInvariant() }
+        finally { $sha.Dispose() }
+    }
+    finally { $stream.Dispose() }
+}
+
 function Finish([int]$code) {
     if ($PauseAtEnd) { Read-Host 'Press Enter to close' | Out-Null }
     exit $code
@@ -185,7 +200,7 @@ if (Test-Path $sums) {
         Finish 1
     }
     $expected = ($line -split '\s+')[0].ToLowerInvariant()
-    $actual = (Get-FileHash -Path $Msi -Algorithm SHA256).Hash.ToLowerInvariant()
+    $actual = Get-Sha256 $Msi
     if ($expected -ne $actual) {
         Say "Checksum mismatch: the MSI isn't the one the build produced. Stopping." 'Red'
         Finish 1

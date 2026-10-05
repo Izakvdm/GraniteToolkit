@@ -6,6 +6,10 @@ rem   Publish.cmd                                          development build (un
 rem   Publish.cmd -Sign ArtifactSigning -Publisher "Name"  signed release
 rem   Publish.cmd -Sign CertificateStore -CertificateThumbprint <sha1> -TimestampUrl <url> -Publisher "Name"
 setlocal
+rem PowerShell 7 passes its PSModulePath down to Windows PowerShell 5.1, which
+rem then can't load its own modules (Get-FileHash went missing on Ultra).
+rem Clearing it here makes 5.1 use its defaults.
+set "PSModulePath="
 cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0build\Publish.ps1" %*
 set RC=%ERRORLEVEL%
