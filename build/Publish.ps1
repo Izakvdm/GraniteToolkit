@@ -7,7 +7,7 @@
   Steps, stopping at the first failure:
     1. Checks: .NET SDK, clean git tree (release only), vulnerable packages.
     2. Build and run the logic harnesses that need no extra data.
-    3. Publish the launcher and the four modules, self-contained for win-x64,
+    3. Publish the launcher and the five modules, self-contained for win-x64,
        each on its own, then merge them into one folder. Two modules
        shipping the same file with different contents stops the build.
     4. Sign every exe and dll not already signed (Microsoft's runtime files
@@ -56,7 +56,7 @@ $root = Split-Path $PSScriptRoot -Parent
 Import-Module (Join-Path $PSScriptRoot 'Signing.psm1') -Force
 if (-not $SigningConfig) { $SigningConfig = Join-Path $PSScriptRoot 'signing.json' }
 
-$apps = @('GraniteToolkit', 'GraniteInstallWizard', 'GraniteBiDeployWizard', 'GraniteAttachInstaller', 'GraniteDbSwitcher')
+$apps = @('GraniteToolkit', 'GraniteInstallWizard', 'GraniteBiDeployWizard', 'GraniteAttachInstaller', 'GraniteNiFiDeploy', 'GraniteDbSwitcher')
 $developerOnly = @('GraniteDbSwitcher')
 $release = $Sign -ne 'None'
 
@@ -104,7 +104,7 @@ if ($LASTEXITCODE -ne 0) {
 if (-not $SkipTests) {
     Step 'Tests'
     Invoke-Checked 'build' { dotnet build (Join-Path $root 'GraniteToolkit.sln') -c Release --nologo }
-    foreach ($h in 'Harness.Core', 'Harness.Launcher', 'Harness.DbSwitcher') {
+    foreach ($h in 'Harness.Core', 'Harness.Launcher', 'Harness.DbSwitcher', 'Harness.NiFiDeploy') {
         Invoke-Checked $h { dotnet run --project (Join-Path $root "tests\$h") -c Release --no-build }
     }
 } elseif ($release) {

@@ -6,7 +6,7 @@ setlocal
 cd /d "%~dp0"
 dotnet build GraniteToolkit.sln -c Release -nologo
 if errorlevel 1 goto :failed
-for %%h in (Harness.Core Harness.Launcher Harness.DbSwitcher) do (
+for %%h in (Harness.Core Harness.Launcher Harness.DbSwitcher Harness.NiFiDeploy) do (
   echo.
   echo === %%h
   dotnet run --project tests\%%h -c Release --no-build || goto :failed

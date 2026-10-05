@@ -116,6 +116,26 @@ Check(r4.Any(r => r.Area == "GraniteWMS" && r.State == HealthState.Attention && 
 Check(r4.Any(r => r.Title == "BI sync" && r.Detail.Contains("Couldn't read")), "Task Scheduler read error shown");
 Check(!Dashboard.ForModule(ModuleId.Install, unreadable).Suggested, "when IIS can't be read, Install isn't suggested blindly");
 
+// ---- NiFi ----------------------------------------------------------------------
+Check(rows.Any(r => r.Title == "Apache NiFi" && r.State == HealthState.Info && r.Detail == "Not installed"), "no NiFi: information row");
+Check(!Dashboard.ForModule(ModuleId.NiFi, bare).Suggested && Dashboard.ForModule(ModuleId.NiFi, bare).Line.Contains("Needs a GraniteWMS database"), "bare server: NiFi needs Granite first");
+Check(Dashboard.ForModule(ModuleId.NiFi, installed).Line.StartsWith("Not installed yet"), "Granite installed, no NiFi: not installed yet");
+var withNiFi = installed with
+{
+    NiFiServices = new[]
+    {
+        new NiFiService("NiFi", @"C:\nifi\nifi-2.11.0", "2.11.0", "RUNNING"),
+        new NiFiService("NiFiTest", @"D:\nifi-test\nifi-2.11.0", "2.11.0", "STOPPED")
+    }
+};
+var r5 = Dashboard.StatusRows(withNiFi);
+Check(r5.Any(r => r.Title == "Apache NiFi" && r.State == HealthState.Ok && r.Detail.Contains("NiFi 2.11.0, service NiFi, running")), "running NiFi service OK");
+Check(r5.Any(r => r.Title == "Apache NiFi" && r.State == HealthState.Attention && r.Detail.Contains("stopped")), "stopped NiFi service flagged");
+Check(!r5.Any(r => r.Title == "Apache NiFi" && r.Detail == "Not installed"), "no 'not installed' row once NiFi is found");
+var nifiTile = Dashboard.ForModule(ModuleId.NiFi, withNiFi).Line;
+Check(nifiTile.StartsWith("Already installed") && nifiTile.Contains("NiFiTest (not running)"), "NiFi tile lists the services");
+Check(ModuleCatalog.All.Any(m => m.Id == ModuleId.NiFi && m.ExeName == "GraniteNiFiDeploy.exe" && !m.DeveloperOnly), "NiFi Deploy is a client-server module");
+
 // ---- BiTaskParser -------------------------------------------------------------
 const string csv = "\"\\GraniteWMS BI Sync - GraniteLive_BI\",\"02/10/2026 02:00:00\",\"Ready\"\r\n" +
                    "\"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag\",\"N/A\",\"Ready\"\r\n" +

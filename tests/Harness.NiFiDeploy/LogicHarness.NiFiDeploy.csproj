@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Checks NiFi Deploy's logic with no Windows needed: recognising the four
+    downloads (against zips it builds on the fly), the edits to NiFi's own
+    files, the input rules, JDBC URLs, the embedded SQL and flow, and the
+    certificate pinning. Links the pure source files only.
+
+    Optional live test against a running NiFi 2.x (uploads the flow, sets
+    parameters, has NiFi test its SQL connection, starts, stops and deletes it):
+    see "Testing" in the README for the command. (XML comments can't contain
+    two hyphens in a row, so the command line can't be written here.)
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>LogicHarness.NiFiDeploy</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../src/Granite.Toolkit.Core/Discovery/NiFiService.cs" Link="Shared/NiFiService.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/MediaCatalog.cs" Link="NiFiDeploy/MediaCatalog.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/NiFiConfigFiles.cs" Link="NiFiDeploy/NiFiConfigFiles.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/InputRules.cs" Link="NiFiDeploy/InputRules.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/JdbcUrl.cs" Link="NiFiDeploy/JdbcUrl.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/DeployScripts.cs" Link="NiFiDeploy/DeployScripts.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/NiFiFlowParameters.cs" Link="NiFiDeploy/NiFiFlowParameters.cs" />
+    <Compile Include="../../src/GraniteNiFiDeploy/Core/NiFiApiClient.cs" Link="NiFiDeploy/NiFiApiClient.cs" />
+  </ItemGroup>
+
+  <!-- Same resources and names as the module, so DeployScripts reads them the same way. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../src/GraniteNiFiDeploy/Resources/sql/*.sql" LogicalName="NiFiDeploy.sql.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../src/GraniteNiFiDeploy/Resources/flow/*.json" LogicalName="NiFiDeploy.flow.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

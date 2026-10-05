@@ -25,6 +25,9 @@ public sealed record ServerSnapshot
 
     /// <summary>Windows scheduled tasks the BI wizard created. Null when Task Scheduler couldn't be read.</summary>
     public IReadOnlyList<string>? BiSyncTasks { get; init; }
+
+    /// <summary>NiFi services (NSSM running nifi.cmd), as NiFi Deploy installs them.</summary>
+    public IReadOnlyList<NiFiService> NiFiServices { get; init; } = Array.Empty<NiFiService>();
 }
 
 public enum HealthState { Ok, Attention, Missing, Info }
@@ -101,6 +104,16 @@ public static class Dashboard
             var tasks => new("Add-ons", HealthState.Ok, "BI sync", "Scheduled task: " + string.Join(", ", tasks))
         });
 
+        if (s.NiFiServices.Count == 0)
+            rows.Add(new("Add-ons", HealthState.Info, "Apache NiFi", "Not installed"));
+        foreach (var n in s.NiFiServices)
+        {
+            string what = $"{(n.Version is null ? "NiFi" : "NiFi " + n.Version)}, service {n.ServiceName}";
+            rows.Add(n.IsRunning
+                ? new("Add-ons", HealthState.Ok, "Apache NiFi", $"{what}, running ({n.NiFiHome})")
+                : new("Add-ons", HealthState.Attention, "Apache NiFi", $"{what}, {(n.State is null ? "state unknown" : n.State.ToLowerInvariant())} ({n.NiFiHome})"));
+        }
+
         return rows;
     }
 
@@ -118,6 +131,9 @@ public static class Dashboard
             ModuleId.Attach => s.AttachSites.Count > 0
                 ? new(id, "Already installed: " + string.Join(", ", s.AttachSites), false)
                 : new(id, hasGranite ? "Not installed yet." : "Needs a GraniteWMS install first.", false),
+            ModuleId.NiFi => s.NiFiServices.Count > 0
+                ? new(id, "Already installed: " + string.Join(", ", s.NiFiServices.Select(n => $"service {n.ServiceName}{(n.IsRunning ? "" : " (not running)")}")), false)
+                : new(id, hasGranite ? "Not installed yet. Needs the four downloads (NiFi, JDK, NSSM, JDBC driver)." : "Needs a GraniteWMS database to import into.", false),
             ModuleId.DbSwitcher => new(id, hasGranite ? $"{Plural(s.Installs.Count, "install")} it can switch." : "Needs a local GraniteWMS install.", false),
             _ => new(id, "", false)
         };

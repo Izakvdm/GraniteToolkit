@@ -9,7 +9,7 @@ namespace GraniteToolkit.Services;
 /// <summary>
 /// Gathers the dashboard's snapshot. Read-only by design: it lists IIS
 /// through appcmd, reads the registry and file versions, and queries Task
-/// Scheduler. It never connects to SQL Server (that needs credentials,
+/// Scheduler and the service list (sc query) for NiFi. It never connects to SQL Server (that needs credentials,
 /// which belong in the module that uses them) and never changes anything.
 /// </summary>
 public static class ServerProbe
@@ -52,8 +52,22 @@ public static class ServerProbe
             Installs = installs,
             IisScanError = scanError,
             AttachSites = attach,
-            BiSyncTasks = await ReadBiTasksAsync(token)
+            BiSyncTasks = await ReadBiTasksAsync(token),
+            NiFiServices = await ReadNiFiServicesAsync(token)
         };
+    }
+
+    private static async Task<IReadOnlyList<NiFiService>> ReadNiFiServicesAsync(CancellationToken token)
+    {
+        try
+        {
+            return await NiFiServiceDiscovery.FindAsync(token);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch
+        {
+            return Array.Empty<NiFiService>();
+        }
     }
 
     private static async Task<IReadOnlyList<string>?> ReadBiTasksAsync(CancellationToken token)

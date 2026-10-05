@@ -1,6 +1,6 @@
 namespace GraniteToolkit.Logic;
 
-public enum ModuleId { Install, Bi, Attach, DbSwitcher }
+public enum ModuleId { Install, Bi, Attach, NiFi, DbSwitcher }
 
 /// <summary>One toolkit module: an exe that ships next to the launcher.</summary>
 /// <param name="ExeName">File name only. The launcher only ever starts it from its own folder.</param>
@@ -20,6 +20,9 @@ public static class ModuleCatalog
         new ModuleInfo(ModuleId.Attach, "Add Granite Attach",
             "The Attach app under IIS and its database objects, so users can attach photos and files to transactions.",
             "GraniteAttachInstaller.exe", DeveloperOnly: false),
+        new ModuleInfo(ModuleId.NiFi, "Deploy NiFi integration",
+            "Apache NiFi as a Windows service with the Granite CSV import: a client system drops a CSV in a folder and it lands in Granite, validated and audited.",
+            "GraniteNiFiDeploy.exe", DeveloperOnly: false),
         new ModuleInfo(ModuleId.DbSwitcher, "Switch database",
             "Developer tool: points a local install at another client's database for testing. Not for client servers.",
             "GraniteDbSwitcher.exe", DeveloperOnly: true)

@@ -4,7 +4,8 @@
     Checks the launcher's decisions with no Windows needed: which module a
     given pair of signatures allows, which folder permissions count as
     unsafe, what the dashboard says for a given server, and how the BI
-    scheduled tasks are recognised. Links the pure source files only.
+    scheduled tasks and NiFi services are recognised. Links the pure source
+    files only.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -17,6 +18,7 @@
   <ItemGroup>
     <Compile Include="../../src/Granite.Toolkit.Core/Security/SignaturePolicy.cs" Link="Shared/SignaturePolicy.cs" />
     <Compile Include="../../src/Granite.Toolkit.Core/Security/FolderAclPolicy.cs" Link="Shared/FolderAclPolicy.cs" />
+    <Compile Include="../../src/Granite.Toolkit.Core/Discovery/NiFiService.cs" Link="Shared/NiFiService.cs" />
     <Compile Include="../../src/GraniteToolkit/Logic/ModuleCatalog.cs" Link="Launcher/ModuleCatalog.cs" />
     <Compile Include="../../src/GraniteToolkit/Logic/Dashboard.cs" Link="Launcher/Dashboard.cs" />
   </ItemGroup>

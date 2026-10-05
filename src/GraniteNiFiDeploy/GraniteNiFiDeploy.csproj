@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GraniteNiFiDeploy</RootNamespace>
+    <AssemblyName>GraniteNiFiDeploy</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Product metadata -->
+    <Product>Granite NiFi Deploy</Product>
+    <Company>Cradle Technology Services</Company>
+    <Version>0.1.1</Version>
+    <Description>Installs Apache NiFi as a Windows service for GraniteWMS integrations and sets up the Granite CSV import: the SQL framework and feeds, a least-privilege SQL login, and the NiFi flow, configured through NiFi's own API.</Description>
+  </PropertyGroup>
+
+  <!--
+    The SQL scripts and the NiFi flow ship inside the exe rather than as
+    loose files, so the module's Authenticode signature covers them and
+    nobody can edit what gets deployed to a client's Granite database.
+    Source of truth: the NiFiDeploy project (sql\ and nifi\). Logical names
+    are fixed so DeployScripts finds them whatever the folder layout.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\*.sql" LogicalName="NiFiDeploy.sql.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources\flow\*.json" LogicalName="NiFiDeploy.flow.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj" />
+    <ProjectReference Include="..\Granite.Toolkit.UI\Granite.Toolkit.UI.csproj" />
+  </ItemGroup>
+
+</Project>

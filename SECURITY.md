@@ -17,14 +17,22 @@ The toolkit runs as administrator on client servers and changes IIS, Windows fea
 | Two modules ship different copies of the same DLL | The release build publishes each module on its own, then merges them, and stops if any file differs. |
 | Developer tools end up on client servers | DB Switcher is a separate MSI feature, off by default, and is left out of the portable zip. The launcher only shows tools that are installed, and asks for confirmation before opening a developer tool. |
 | Two operators run installers against the same IIS at once | One toolkit per machine (a global mutex), and one module at a time. |
+| NiFi Deploy: the SQL or flow it deploys gets edited on the server | The scripts and the flow are embedded in `GraniteNiFiDeploy.exe`, so its signature covers them. There are no loose script files to change. |
+| NiFi Deploy: someone reads NiFi's keys or changes its files | NiFi's install folder (`C:\nifi` by default) is admin-only: `conf` holds the sensitive-properties key, the keystore and the login hash. The service runs as LocalSystem. |
+| NiFi Deploy: files dropped into the import folders by anyone | The import folder is admin-only. Only the drop account named in the wizard gets Modify, and only on `Inbound`. Archive and Error stay admin-only. |
+| NiFi Deploy: passwords leaking | The NiFi admin password is typed once, passed to NiFi's own tool as a separate argument (no shell, so no quoting tricks) and stored by NiFi only as a bcrypt hash. NiFi's SQL login gets a random 32-character password that nobody sees: it goes into SQL Server and into NiFi's sensitive parameter (encrypted in NiFi's flow), never into the log or the deployment record. Both are cleared from memory when the install finishes. |
+| NiFi Deploy: NiFi's SQL login doing more than importing | It's only in role `Custom_NiFiImport`: insert into the staging tables and run the import procs. The procs run as owner, so it has no rights on Granite's own tables. |
+| NiFi Deploy: talking to the wrong NiFi, or through a proxy | NiFi's certificate is read from its own keystore and pinned by SHA-256: only that certificate is accepted, never "any certificate". No proxy, and the bearer token only (no cookies). |
+| NiFi Deploy: a bundle zip's contents swapped before install | Downloads inside a bundle zip are unpacked to `C:\ProgramData\Granite NiFi Deploy\Media` (admin-only), cleared and unpacked again every time. |
 
-What the launcher itself does is read-only. It lists IIS with `appcmd`, reads the registry and file versions, and queries Task Scheduler. It never connects to SQL Server, never asks for or stores credentials, and changes nothing. The modules do the changing, and only after the operator confirms.
+What the launcher itself does is read-only. It lists IIS with `appcmd`, reads the registry and file versions, and queries Task Scheduler and, for NiFi, `sc query`. It never connects to SQL Server, never asks for or stores credentials, and changes nothing. The modules do the changing, and only after the operator confirms.
 
 ### Limits worth knowing
 
 - Revocation is checked from the local cache only, so an offline server doesn't hang. A certificate that's known to be revoked always fails. When nothing is cached, the signature check still runs and the log says revocation wasn't checked.
 - Publishers are compared by the certificate subject, because Azure Artifact Signing issues a new certificate every day. Getting another certificate with the same subject means passing the certificate authority's identity validation for that organisation.
 - The launcher checks the module exe. The DLLs next to it are protected by the install folder's permissions, not by a per-file check at launch. Windows App Control (WDAC) with a publisher rule covers DLLs too, if a client wants that.
+- NiFi Deploy leaves NiFi listening on `localhost` only and the service as LocalSystem. Opening NiFi to other machines, or running it under a dedicated account, is a manual, deliberate step. Its SQL connection is encrypted but, by default, accepts a self-signed SQL Server certificate (as the other modules do); tick "Validate the SQL Server's certificate" in step 3 when the server has a CA certificate.
 - Logs are kept after uninstall, on purpose, as a record of what was done on the server. They hold server, site and account names, never passwords: the Install Wizard masks passwords, and the launcher never handles any.
 
 ## For operators

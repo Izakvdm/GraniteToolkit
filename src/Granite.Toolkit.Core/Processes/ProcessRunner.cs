@@ -10,8 +10,8 @@ public sealed record ProcessResult(int ExitCode, string Output)
 }
 
 /// <summary>
-/// Runs dism, appcmd, netsh, icacls, msiexec, dotnet and the Hosting Bundle
-/// installers without a console window, capturing their output. Shared by
+/// Runs dism, appcmd, netsh, icacls, msiexec, dotnet, the Hosting Bundle
+/// installers, sc, nssm and java without a console window, capturing their output. Shared by
 /// every toolkit module (was copied into each wizard before the toolkit).
 /// </summary>
 public static class ProcessRunner
@@ -19,11 +19,13 @@ public static class ProcessRunner
     /// <param name="fileName">Executable path or name on PATH.</param>
     /// <param name="arguments">One entry per argument; quoting is done by ProcessStartInfo.</param>
     /// <param name="timeout">Kills the process if it runs longer. Installers get generous timeouts.</param>
-    public static async Task<ProcessResult> RunAsync(string fileName, IEnumerable<string> arguments, TimeSpan timeout, CancellationToken token)
+    /// <param name="workingDirectory">Folder the tool starts in, for tools that resolve relative paths (NiFi's command-line tools read ./conf). Null keeps the caller's.</param>
+    public static async Task<ProcessResult> RunAsync(string fileName, IEnumerable<string> arguments, TimeSpan timeout, CancellationToken token, string? workingDirectory = null)
     {
         var psi = new ProcessStartInfo(fileName)
         {
             UseShellExecute = false,
+            WorkingDirectory = workingDirectory ?? string.Empty,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
