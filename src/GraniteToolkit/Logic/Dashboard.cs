@@ -1,3 +1,4 @@
+using Granite.Toolkit.Core.Addressing;
 using Granite.Toolkit.Core.Discovery;
 
 namespace GraniteToolkit.Logic;
@@ -26,11 +27,22 @@ public sealed record ServerSnapshot
     /// <summary>Windows scheduled tasks the BI wizard created. Null when Task Scheduler couldn't be read.</summary>
     public IReadOnlyList<string>? BiSyncTasks { get; init; }
 
+    /// <summary>
+    /// Where each install's Web Desktop and Process App look for the
+    /// Business API, with how that address fits this machine now. Keyed by
+    /// the install's root folder.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<AddressFinding>> ApiAddresses { get; init; } =
+        new Dictionary<string, IReadOnlyList<AddressFinding>>();
+
     /// <summary>NiFi services (NSSM running nifi.cmd), as NiFi Deploy installs them.</summary>
     public IReadOnlyList<NiFiService> NiFiServices { get; init; } = Array.Empty<NiFiService>();
 }
 
 public enum HealthState { Ok, Attention, Missing, Info }
+
+/// <summary>One endpoint setting and how its address fits this machine.</summary>
+public sealed record AddressFinding(EndpointSetting Setting, AddressHealth Health);
 
 /// <summary>One line of the dashboard's server status list.</summary>
 public sealed record StatusRow(string Area, HealthState State, string Title, string Detail);
@@ -90,6 +102,8 @@ public static class Dashboard
                 bool complete = install.Apps.Count >= 4;
                 rows.Add(new("GraniteWMS", complete ? HealthState.Ok : HealthState.Attention, $"{version} at {install.RootFolder}",
                     complete ? apps : $"{apps} (not all four core apps found)"));
+                if (s.ApiAddresses.TryGetValue(install.RootFolder, out var findings) && findings.Count > 0)
+                    rows.Add(AddressRow(findings));
             }
         }
 
@@ -131,9 +145,50 @@ public static class Dashboard
             ModuleId.NiFi => s.NiFiServices.Count > 0
                 ? new(id, "Already installed: " + string.Join(", ", s.NiFiServices.Select(n => $"service {n.ServiceName}{(n.IsRunning ? "" : " (not running)")}")), false)
                 : new(id, hasGranite ? "Not installed yet. Needs the four downloads (NiFi, JDK, NSSM, JDBC driver)." : "Needs a GraniteWMS database to import into.", false),
+            ModuleId.Address => AddressTile(s),
             ModuleId.DbSwitcher => new(id, hasGranite ? $"{Plural(s.Installs.Count, "install")} it can switch." : "Needs a local GraniteWMS install.", false),
             _ => new(id, "", false)
         };
+    }
+
+    /// <summary>The worst address problem first, in plain words.</summary>
+    public static StatusRow AddressRow(IReadOnlyList<AddressFinding> findings)
+    {
+        var worst = findings.OrderByDescending(f => Severity(f.Health)).First();
+        string hosts = string.Join(", ", findings.Select(f => f.Setting.Host).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase));
+        return worst.Health switch
+        {
+            AddressHealth.NotThisMachine => new("GraniteWMS", HealthState.Missing, "Business API address is out of date",
+                $"Web Desktop and Process App look for the API at {worst.Setting.Host}, which isn't this server's address any more. Use Change server address."),
+            AddressHealth.Localhost => new("GraniteWMS", HealthState.Missing, "Business API address is localhost",
+                "Works on the server only; PCs and scanners can't reach it. Use Change server address."),
+            AddressHealth.Missing => new("GraniteWMS", HealthState.Attention, "Business API address not set", "An endpoint setting is empty."),
+            AddressHealth.DhcpAddress => new("GraniteWMS", HealthState.Attention, $"Business API address {hosts}",
+                "A DHCP address: it can change. Reserve it on the DHCP server, or switch to the server's name with Change server address."),
+            AddressHealth.NameNotChecked => new("GraniteWMS", HealthState.Ok, $"Business API address {hosts}", "A DNS name (not checked from here)"),
+            _ => new("GraniteWMS", HealthState.Ok, $"Business API address {hosts}", "This server")
+        };
+    }
+
+    private static int Severity(AddressHealth h) => h switch
+    {
+        AddressHealth.NotThisMachine => 5,
+        AddressHealth.Localhost => 4,
+        AddressHealth.Missing => 3,
+        AddressHealth.DhcpAddress => 2,
+        AddressHealth.NameNotChecked => 1,
+        _ => 0
+    };
+
+    private static ModuleStatus AddressTile(ServerSnapshot s)
+    {
+        if (s.Installs.Count == 0) return new(ModuleId.Address, "Needs a GraniteWMS install.", false);
+        var all = s.ApiAddresses.Values.SelectMany(f => f).ToList();
+        if (all.Any(f => f.Health is AddressHealth.NotThisMachine or AddressHealth.Localhost))
+            return new(ModuleId.Address, "The Business API address is out of date. Fix it here.", true);
+        if (all.Any(f => f.Health == AddressHealth.DhcpAddress))
+            return new(ModuleId.Address, "Uses a DHCP address that can change. Switch to the server's name here if it isn't reserved.", false);
+        return new(ModuleId.Address, "The Business API address matches this server.", false);
     }
 
     private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";

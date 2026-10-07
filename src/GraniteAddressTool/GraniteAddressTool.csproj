@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GraniteAddressTool</RootNamespace>
+    <AssemblyName>GraniteAddressTool</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Product metadata -->
+    <Product>GraniteWMS Change Address</Product>
+    <Company>Cradle Technology Services</Company>
+    <Version>0.1.0</Version>
+    <Description>Moves an installed GraniteWMS stack to a new server address: the Business API address in Web Desktop and Process App, the APIs' allowed origins, and the HTTPS certificate if it doesn't cover the new address.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Granite.Toolkit.Core\Granite.Toolkit.Core.csproj" />
+  </ItemGroup>
+
+</Project>

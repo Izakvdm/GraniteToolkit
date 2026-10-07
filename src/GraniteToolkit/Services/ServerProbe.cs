@@ -1,3 +1,5 @@
+using Granite.Toolkit.Core.Addressing;
+using Granite.Toolkit.Core.Net;
 using System.Runtime.InteropServices;
 using Granite.Toolkit.Core.Discovery;
 using Granite.Toolkit.Core.Processes;
@@ -19,6 +21,7 @@ public static class ServerProbe
         string? iisVersion = ServerPrerequisites.IisVersion();
         IReadOnlyList<GraniteInstall> installs = Array.Empty<GraniteInstall>();
         IReadOnlyList<string> attach = Array.Empty<string>();
+        var addresses = new Dictionary<string, IReadOnlyList<AddressFinding>>(StringComparer.OrdinalIgnoreCase);
         string? scanError = null;
 
         if (GraniteInstallScanner.IisInstalled)
@@ -27,6 +30,9 @@ public static class ServerProbe
             {
                 var scan = await GraniteInstallScanner.ScanAsync(token);
                 installs = scan.Installs;
+                var machine = LocalAddressDiscovery.Current();
+                foreach (var install in installs)
+                    addresses[install.RootFolder] = ReadApiAddresses(install, machine);
                 attach = GraniteInstallScanner.FindAttachSites(scan, File.Exists, Environment.ExpandEnvironmentVariables)
                     .Select(site => site.Bindings.Count == 0
                         ? site.Name
@@ -52,9 +58,26 @@ public static class ServerProbe
             Installs = installs,
             IisScanError = scanError,
             AttachSites = attach,
+            ApiAddresses = addresses,
             BiSyncTasks = await ReadBiTasksAsync(token),
             NiFiServices = await ReadNiFiServicesAsync(token)
         };
+    }
+
+    /// <summary>Reads (never writes) each app's appsettings.json for the Business API address.</summary>
+    private static IReadOnlyList<AddressFinding> ReadApiAddresses(GraniteInstall install, MachineAddresses machine)
+    {
+        var list = new List<AddressFinding>();
+        foreach (var app in install.Apps.Where(a => AddressChange.EndpointKeys.ContainsKey(a.Kind)))
+        {
+            try
+            {
+                foreach (var setting in AddressChange.ReadEndpoints(app.Kind, File.ReadAllBytes(app.AppSettingsPath)))
+                    list.Add(new AddressFinding(setting, GraniteAddress.Check(setting.Host, machine)));
+            }
+            catch { /* unreadable settings: the Change address module reports it */ }
+        }
+        return list;
     }
 
     private static async Task<IReadOnlyList<NiFiService>> ReadNiFiServicesAsync(CancellationToken token)

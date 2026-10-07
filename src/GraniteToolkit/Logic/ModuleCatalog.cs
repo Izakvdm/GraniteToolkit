@@ -1,6 +1,6 @@
 namespace GraniteToolkit.Logic;
 
-public enum ModuleId { Install, Bi, NiFi, DbSwitcher }
+public enum ModuleId { Install, Address, Bi, NiFi, DbSwitcher }
 
 /// <summary>One toolkit module: an exe that ships next to the launcher.</summary>
 /// <param name="ExeName">File name only. The launcher only ever starts it from its own folder.</param>
@@ -14,6 +14,9 @@ public static class ModuleCatalog
         new ModuleInfo(ModuleId.Install, "Install GraniteWMS",
             "The core stack on this server: Web Desktop, Business API, Custodian and Process App, with the database, IIS sites, certificate and firewall rules.",
             "GraniteInstallWizard.exe", DeveloperOnly: false),
+        new ModuleInfo(ModuleId.Address, "Change server address",
+            "Moves an install to a new address: where Web Desktop and Process App find the Business API, the APIs' allowed origins, and the HTTPS certificate if it doesn't cover the new address.",
+            "GraniteAddressTool.exe", DeveloperOnly: false),
         new ModuleInfo(ModuleId.Bi, "Deploy BI reporting",
             "The BI database, sync engine, reporting views and the sync schedule (SQL Agent, Granite Scheduler or Windows Task Scheduler).",
             "GraniteBiDeployWizard.exe", DeveloperOnly: false),

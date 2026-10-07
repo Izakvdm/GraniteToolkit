@@ -147,5 +147,23 @@ var tasks = BiTaskParser.Parse(csv);
 Check(tasks.SequenceEqual(new[] { "GraniteWMS BI Sync - GraniteLive_BI", "GraniteWMS BI Sync - Client2_BI" }), "BI tasks found, in folders too, no duplicates");
 Check(BiTaskParser.Parse("").Count == 0, "empty output");
 
+// ---- Business API address on the dashboard ------------------------------------------
+{
+    EndpointSetting Ep(string url) => new(GraniteAppKind.WebDesktop, "Business_API_Endpoint", url);
+    var stale = new[] { new AddressFinding(Ep("https://192.168.68.63:40081/"), AddressHealth.NotThisMachine), new AddressFinding(Ep("https://ULTRA:40082/"), AddressHealth.Ok) };
+    var row = Dashboard.AddressRow(stale);
+    Check(row.State == HealthState.Missing && row.Detail.Contains("192.168.68.63") && row.Detail.Contains("Change server address"), "stale API address: red row naming the address and the fix");
+    Check(Dashboard.AddressRow(new[] { new AddressFinding(Ep("https://192.168.68.70:40081/"), AddressHealth.DhcpAddress) }).State == HealthState.Attention, "DHCP address: amber");
+    Check(Dashboard.AddressRow(new[] { new AddressFinding(Ep("https://ULTRA:40081/"), AddressHealth.Ok) }).State == HealthState.Ok, "own name: OK");
+
+    var inst = new GraniteInstall(@"C:\Program Files\GraniteWMS", Array.Empty<Granite.Toolkit.Core.Discovery.GraniteApp>());
+    var snap = new ServerSnapshot { Installs = new[] { inst }, ApiAddresses = new Dictionary<string, IReadOnlyList<AddressFinding>> { [inst.RootFolder] = stale } };
+    Check(Dashboard.StatusRows(snap).Any(r => r.Title == "Business API address is out of date"), "row appears under the install");
+    var tile = Dashboard.ForModule(ModuleId.Address, snap);
+    Check(tile.Suggested && tile.Line.Contains("out of date"), "Change address tile suggested when the address is stale");
+    Check(!Dashboard.ForModule(ModuleId.Address, snap with { ApiAddresses = new Dictionary<string, IReadOnlyList<AddressFinding>>() }).Suggested, "not suggested when fine");
+    Check(!ModuleCatalog.All.Single(m => m.Id == ModuleId.Address).DeveloperOnly, "Change address ships to client servers");
+}
+
 Console.WriteLine($"{passed} passed, {failed} failed.");
 return failed == 0 ? 0 : 1;

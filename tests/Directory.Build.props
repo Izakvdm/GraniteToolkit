@@ -12,6 +12,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Iis/IisCommands.cs" Link="Shared/IisCommands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Discovery/InstallDiscovery.cs" Link="Shared/InstallDiscovery.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Discovery/GraniteInstall.cs" Link="Shared/GraniteInstall.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Json/JsonTextEditor.cs" Link="Shared/JsonTextEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/GraniteAddress.cs" Link="Shared/GraniteAddress.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/AddressChange.cs" Link="Shared/AddressChange.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/CertificateCoverage.cs" Link="Shared/CertificateCoverage.cs" />
   </ItemGroup>
 
 </Project>

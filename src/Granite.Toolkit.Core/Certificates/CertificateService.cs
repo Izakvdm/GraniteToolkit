@@ -2,11 +2,11 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace GraniteInstallWizard.Core;
+namespace Granite.Toolkit.Core.Certificates;
 
 /// <summary>
-/// The HTTPS certificate: create a self-signed one, or list existing ones
-/// for Step 5 to pick from.
+/// The HTTPS certificate for the Granite sites: create a self-signed one,
+/// or list the existing ones IIS could use (Install Wizard Step 5, Change address).
 /// </summary>
 public static class CertificateService
 {

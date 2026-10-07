@@ -5,8 +5,9 @@ using System.Net.Sockets;
 namespace Granite.Toolkit.Core.Net;
 
 /// <summary>
-/// This server's names, IPv4 addresses and listening ports: for the Install
-/// module's address list and certificate names, and Attach's PublicBaseUrl.
+/// This server's names, IPv4 addresses (fixed or DHCP) and listening ports:
+/// for the Install module's address list and certificate names, the
+/// dashboard's address check and the Change address module.
 /// </summary>
 public static class LocalAddressDiscovery
 {
@@ -44,6 +45,37 @@ public static class LocalAddressDiscovery
         }
         catch { /* best effort */ }
         return list;
+    }
+
+    /// <summary>
+    /// This machine's names and IPv4 addresses, with each address marked
+    /// fixed or DHCP-assigned (from how Windows got it: PrefixOrigin). A
+    /// DHCP reservation still shows as DHCP, since only the DHCP server
+    /// knows it's reserved.
+    /// </summary>
+    public static Granite.Toolkit.Core.Addressing.MachineAddresses Current()
+    {
+        var fixedIps = new List<string>();
+        var dhcpIps = new List<string>();
+        try
+        {
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up || nic.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                foreach (var ua in nic.GetIPProperties().UnicastAddresses)
+                {
+                    if (ua.Address.AddressFamily != AddressFamily.InterNetwork) continue;
+                    string ip = ua.Address.ToString();
+                    if (ip.StartsWith("169.254.", StringComparison.Ordinal) || fixedIps.Contains(ip) || dhcpIps.Contains(ip)) continue;
+                    bool dhcp;
+                    try { dhcp = ua.PrefixOrigin == PrefixOrigin.Dhcp; }
+                    catch (PlatformNotSupportedException) { dhcp = false; }
+                    (dhcp ? dhcpIps : fixedIps).Add(ip);
+                }
+            }
+        }
+        catch { /* best effort */ }
+        return new Granite.Toolkit.Core.Addressing.MachineAddresses(HostNames(), fixedIps, dhcpIps);
     }
 
     /// <summary>Ports something on this machine is already listening on.</summary>
