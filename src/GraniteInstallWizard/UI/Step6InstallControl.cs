@@ -153,6 +153,7 @@ public sealed class Step6InstallControl : WizardStepControl
                 : c.DatabaseMode == DatabaseMode.CreateNew || c.CustodianTokenFile.Length > 0
                     ? $"  Custodian token  set from {source.Value.Label}{(c.DatabaseMode == DatabaseMode.UseExisting ? " (replaces the database's token)" : "")}"
                     : $"  Custodian token  added from {source.Value.Label} only if the database has none");
+            sb.AppendLine("  Report Server    found on this server and set as Custodian's SSRSWebServiceUrl, only if that's empty");
         }
         sb.AppendLine();
         sb.AppendLine("WEBSITES (HTTPS)");

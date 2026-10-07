@@ -520,6 +520,15 @@ if (srcRoot is not null)
     Check(!File.ReadAllText(Path.Combine(srcRoot, "src", "GraniteInstallWizard", "GraniteInstallWizard.csproj")).Contains("Custodian.md"), "nothing token-shaped embedded in the exe");
 }
 
+// Custodian's Report Server address from netsh http show urlacl (shapes from real SSRS 2019/2022, 2016 named instance, PBIRS on 8080, a translated netsh).
+string acl2022 = "URL Reservations:\r\n-----------------\r\n\r\n    Reserved URL            : http://+:80/ReportServer/\r\n        User: NT SERVICE\\SQLServerReportingServices\r\n\r\n    Reserved URL            : http://+:80/Reports/\r\n        User: NT SERVICE\\SQLServerReportingServices\r\n";
+Check(ReportServerSetting.FromUrlAcl(acl2022, "ULTRA") == "http://ULTRA/ReportServer", "SSRS 2022 default: http://ULTRA/ReportServer (portal /Reports ignored)");
+Check(ReportServerSetting.FromUrlAcl("    Reserved URL : http://+:80/ReportServer_SQLEXPRESS/\r\n", "SRV") == "http://SRV/ReportServer_SQLEXPRESS", "SSRS 2016 named instance path kept");
+Check(ReportServerSetting.FromUrlAcl("    URL reservada : https://wms.client.com:443/ReportServer/\r\n    URL reservada : http://+:8080/ReportServer/\r\n", "SRV") == "http://SRV:8080/ReportServer", "HTTP preferred, port kept, any netsh language");
+Check(ReportServerSetting.FromUrlAcl("    Reserved URL : https://+:443/ReportServer/\r\n", "SRV") == "https://SRV/ReportServer", "HTTPS only: used");
+Check(ReportServerSetting.FromUrlAcl("    Reserved URL : http://+:80/Temporary_Listen_Addresses/\r\n", "SRV") is null, "no Report Server: null (setting left alone)");
+Check(ReportServerSetting.UpsertSql.Contains("= N''") && !ReportServerSetting.UpsertSql.Contains("@overwrite"), "SSRS URL only fills an empty setting, never replaces one");
+
 Check(CustodianToken.UpsertSql.Contains("N'GRANITECUSTODIAN', N'Granite.Custodian'"), "upsert looks under both application names");
 Check(CustodianToken.UpsertSql.Contains("@overwrite = 1 OR"), "upsert keeps an existing token unless told to overwrite");
 Check(CustodianToken.DescribeResult(0, 1, 0, true).Contains("added"), "result text: inserted");

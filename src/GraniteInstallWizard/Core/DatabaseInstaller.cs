@@ -5,7 +5,8 @@ namespace GraniteInstallWizard.Core;
 
 /// <summary>
 /// The database stage: app login, GraniteDatabase_Create.sql, the login's
-/// database user, the Hotfix scripts, then the Custodian token.
+/// database user, the Hotfix scripts, then the Custodian token and
+/// Report Server address.
 /// </summary>
 public sealed class DatabaseInstaller
 {
@@ -78,8 +79,20 @@ public sealed class DatabaseInstaller
             }
         }
 
+        // Custodian's Report Server address, found on this server (read-only).
+        string? reportServerUrl = null;
+        if (setToken)
+        {
+            string netsh = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "netsh.exe");
+            var acl = await ProcessRunner.RunAsync(netsh, new[] { "http", "show", "urlacl" }, TimeSpan.FromSeconds(30), token);
+            reportServerUrl = acl.ExitCode == 0 ? ReportServerSetting.FromUrlAcl(acl.Output, Environment.MachineName) : null;
+            if (reportServerUrl is null) Log(LogLevel.Info, ReportServerSetting.NotFoundText);
+        }
+
         if (c.DryRun)
         {
+            if (reportServerUrl is not null)
+                Log(LogLevel.DryRun, $"Would set Custodian's {ReportServerSetting.Key} to {reportServerUrl} if it's empty.");
             Log(LogLevel.DryRun, c.ResetExistingAppLoginPassword
                 ? $"Would create SQL login {c.AppLogin} if it doesn't exist, or change its password to the one entered if it exists with a different one."
                 : $"Would create SQL login {c.AppLogin} if it doesn't exist.");
@@ -194,6 +207,21 @@ public sealed class DatabaseInstaller
                     throw new InvalidOperationException("Setting the Custodian token returned no result.");
                 string message = CustodianToken.DescribeResult(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2), overwriteToken);
                 Log(LogLevel.Success, message);
+            }
+
+            // 6. Custodian's Report Server address, only where it's empty.
+            if (reportServerUrl is not null)
+            {
+                if (!string.Equals(db.Database, c.DatabaseName, StringComparison.OrdinalIgnoreCase))
+                    db.ChangeDatabase(c.DatabaseName);
+                await using var cmd = db.CreateCommand();
+                cmd.CommandText = ReportServerSetting.UpsertSql;
+                cmd.CommandTimeout = 60;
+                cmd.Parameters.Add("@url", System.Data.SqlDbType.NVarChar, 400).Value = reportServerUrl;
+                cmd.Parameters.Add("@user", System.Data.SqlDbType.NVarChar, 50).Value = CustodianToken.AuditUser;
+                await using var reader = await cmd.ExecuteReaderAsync(token);
+                if (await reader.ReadAsync(token))
+                    Log(LogLevel.Success, ReportServerSetting.DescribeResult(reportServerUrl, reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2)));
             }
         }
     }
