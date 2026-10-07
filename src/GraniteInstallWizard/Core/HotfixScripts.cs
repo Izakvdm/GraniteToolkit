@@ -39,9 +39,27 @@ public static class HotfixScripts
             foreach (string file in Directory.GetFiles(dbDir, "*.sql").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
                 found.Add(new HotfixSqlSource($"Hotfix\\{System.IO.Path.GetFileName(dbDir)}\\{System.IO.Path.GetFileName(file)}", file, false));
         }
+        // Custodian.md is never run as a script: its plain UPDATE overwrote a
+        // working token with the release's older one (Ultra, 7 October). The
+        // token has its own step (CustodianToken), which never lets the
+        // release copy replace a token that's already set.
         foreach (string md in Directory.GetFiles(root, "*.md").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-            found.Add(new HotfixSqlSource($"Hotfix\\{System.IO.Path.GetFileName(md)}", md, true));
+            if (!IsCustodianToken(md))
+                found.Add(new HotfixSqlSource($"Hotfix\\{System.IO.Path.GetFileName(md)}", md, true));
         return found;
+    }
+
+    /// <summary>True for Custodian.md, or any .md whose SQL sets the Custodian Token setting.</summary>
+    public static bool IsCustodianToken(string mdPath)
+    {
+        if (System.IO.Path.GetFileName(mdPath).Equals("Custodian.md", StringComparison.OrdinalIgnoreCase)) return true;
+        try
+        {
+            string text = File.ReadAllText(mdPath);
+            return text.Contains("SystemSettings", StringComparison.OrdinalIgnoreCase)
+                && System.Text.RegularExpressions.Regex.IsMatch(text, @"\[?Key\]?\s*=\s*'Token'", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        catch (IOException) { return false; }
     }
 
     /// <summary>Short list for Step 3 and the review: "SQLCLR_Install.sql, Custodian.md".</summary>

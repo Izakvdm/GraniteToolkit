@@ -476,6 +476,8 @@ var v6ctx = new InstallContext { ReleaseFolder = release };
 Console.WriteLine($"  This release: hotfix database scripts = {HotfixScripts.Describe(HotfixScripts.Find(v6ctx))}; hotfix app folders = "
     + string.Join(", ", GraniteComponent.CoreStack.Where(c => v6ctx.HotfixPathFor(c) is not null).Select(c => Path.GetFileName(v6ctx.HotfixPathFor(c)!))));
 Check(GraniteComponent.CoreStack.All(c => Directory.Exists(v6ctx.ReleasePathFor(c))), "this release: every core app folder resolves");
+Check(!HotfixScripts.Find(v6ctx).Any(h => h.Path.EndsWith("Custodian.md", StringComparison.OrdinalIgnoreCase)), "Custodian.md is never run as a hotfix script (it overwrote a working token)");
+
 Directory.Delete(v7Work, recursive: true);
 
 Console.WriteLine();
