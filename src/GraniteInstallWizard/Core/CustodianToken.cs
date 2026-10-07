@@ -22,8 +22,8 @@ public sealed record CustodianTokenValues(string Token, string EncryptionKey, in
 ///
 /// The wizard deliberately carries no copy of its own. The token opens a
 /// shared GitHub repository: compiled into a signed exe it would ship to
-/// every server, outlive its revocation, and go stale (the 28 September
-/// copy is already refused with "Bad credentials"). Without a file the
+/// every server, outlive its revocation, and go stale (the V6.0
+/// release's Version 6 token is already refused with "Bad credentials"). Without a file the
 /// install still completes and verification says Custodian has no working
 /// token.
 ///
