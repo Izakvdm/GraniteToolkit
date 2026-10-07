@@ -145,11 +145,22 @@ public sealed class Step6InstallControl : WizardStepControl
         sb.AppendLine(appHotfix.Count == 0
             ? "  Hotfix app files None in this release"
             : $"  Hotfix app files {Yn(c.ApplyHotfix)}  ({string.Join(", ", appHotfix)})");
+        if (c.IsEnabled(GraniteComponent.Custodian))
+        {
+            var source = c.CustodianTokenSource;
+            sb.AppendLine(source is null
+                ? "  !! Custodian token  none: " + CustodianToken.NoSourceText
+                : c.DatabaseMode == DatabaseMode.CreateNew || c.CustodianTokenFile.Length > 0
+                    ? $"  Custodian token  set from {source.Value.Label}{(c.DatabaseMode == DatabaseMode.UseExisting ? " (replaces the database's token)" : "")}"
+                    : $"  Custodian token  added from {source.Value.Label} only if the database has none");
+        }
         sb.AppendLine();
         sb.AppendLine("WEBSITES (HTTPS)");
         foreach (var comp in c.EnabledComponents)
             sb.AppendLine($"  {comp.Title,-14} {c.Sites[comp.Key].SiteName,-24} {c.UrlFor(comp.Key)}");
         sb.AppendLine($"  Firewall rules   {Yn(c.OpenFirewall)}");
+        if (c.InstallAlongside)
+            sb.AppendLine("  Alongside        yes: existing Granite sites, ports and folders are left as they are");
         if (c.ReplaceExistingSites)
             sb.AppendLine("  !! Existing IIS sites with these names WILL BE REMOVED and recreated (their folders are kept as .bak)");
         sb.AppendLine();

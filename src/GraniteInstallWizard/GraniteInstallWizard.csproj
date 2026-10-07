@@ -15,7 +15,7 @@
     <!-- Product metadata -->
     <Product>GraniteWMS Install Wizard</Product>
     <Company>Cradle Technology Services</Company>
-    <Version>0.5.2</Version>
+    <Version>0.7.0</Version>
     <Description>Replacement for Granite.Scaffolding.exe: installs the GraniteWMS core stack (Web Desktop, Business API, Custodian API, Process App) from a V6.0 or V7.0 release, with its database, IIS sites and HTTPS certificate.</Description>
 
     <!-- Creating IIS sites/app pools, installing Windows features and the
@@ -29,6 +29,11 @@
     <!-- No Microsoft.Web.Administration reference (the skeleton's TODO):
          IIS is driven through appcmd.exe and netsh instead. See the
          remarks on Core/IisCommands.cs for why. -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Custodian's token, set on every install that includes Custodian.
+         See Core/CustodianToken.cs. -->
   </ItemGroup>
 
   <ItemGroup>

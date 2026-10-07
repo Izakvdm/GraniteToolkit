@@ -30,3 +30,6 @@ artifacts/
 # Signing account details (no secrets, but per-machine) and the file signtool reads
 build/signing.json
 build/signing.metadata.json
+
+# Credentials: a Custodian.md holds a live GitHub token. Never commit one; pick it at install time.
+Custodian.md

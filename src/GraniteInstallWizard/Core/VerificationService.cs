@@ -26,6 +26,25 @@ public sealed class VerificationService
             object? n = await SqlConnectionFactory.ScalarAsync(conn, "SELECT COUNT(*) FROM dbo.SystemSettings;", token);
             Log(LogLevel.Success, $"Database: login {c.AppLogin} can read {c.DatabaseName} ({n} system settings).");
             lines.Add("Database login: OK");
+
+            if (c.IsEnabled(GraniteComponent.Custodian))
+            {
+                object? t = await SqlConnectionFactory.ScalarAsync(conn,
+                    "SELECT COUNT(*) FROM dbo.SystemSettings WHERE [Key] = N'Token' AND [Application] IN (N'GRANITECUSTODIAN', N'Granite.Custodian') AND ISNULL(CAST([Value] AS nvarchar(max)), N'') <> N'';",
+                    token);
+                if (Convert.ToInt32(t ?? 0) > 0)
+                {
+                    Log(LogLevel.Success, "Custodian token: set.");
+                    lines.Add("Custodian token: OK");
+                }
+                else
+                {
+                    // Not an install failure (the sites work), but said loudly: the
+                    // process catalogue stays empty until a token is set.
+                    Log(LogLevel.Warning, "Custodian token: none in the database. Custodian runs but can't open the process repository until a current Custodian.md from Granite is run.");
+                    lines.Add("Custodian token: MISSING");
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -62,6 +81,34 @@ public sealed class VerificationService
             {
                 Log(LogLevel.Success, $"{comp.Title}: {url} responded HTTP {code}.");
                 lines.Add($"{comp.Title}: HTTP {code}");
+            }
+        }
+
+        // Custodian's own view of its process repository (GitHub). Every
+        // request returns 200 even when GitHub refuses the token, so this is
+        // the only place a dead token shows.
+        if (c.IsEnabled(GraniteComponent.Custodian))
+        {
+            var repo = await CustodianRepository.CheckAsync(http, c.UrlFor(GraniteComponent.Custodian, "localhost"), token);
+            switch (repo.Health)
+            {
+                case RepositoryHealth.Connected:
+                    Log(LogLevel.Success, $"Custodian process repository: {repo.Message}");
+                    lines.Add("Custodian repository: connected");
+                    break;
+                case RepositoryHealth.TokenRejected:
+                    Log(LogLevel.Warning, $"Custodian process repository: {repo.Message}");
+                    Log(LogLevel.Warning, CustodianRepository.TokenAdvice);
+                    lines.Add("Custodian repository: TOKEN REJECTED");
+                    break;
+                case RepositoryHealth.Failed:
+                    Log(LogLevel.Warning, $"Custodian process repository: {repo.Message}");
+                    lines.Add("Custodian repository: NOT CONNECTED");
+                    break;
+                default:
+                    Log(LogLevel.Info, $"Custodian process repository not checked: {repo.Message}");
+                    lines.Add("Custodian repository: not checked");
+                    break;
             }
         }
 

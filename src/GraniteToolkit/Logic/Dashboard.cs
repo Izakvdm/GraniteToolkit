@@ -1,4 +1,5 @@
 using Granite.Toolkit.Core.Addressing;
+using Granite.Toolkit.Core.Custodian;
 using Granite.Toolkit.Core.Discovery;
 
 namespace GraniteToolkit.Logic;
@@ -42,6 +43,14 @@ public sealed record ServerSnapshot
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<PinnedBinding>> PinnedBindings { get; init; } =
         new Dictionary<string, IReadOnlyList<PinnedBinding>>();
+
+    /// <summary>
+    /// Whether each install's Custodian can reach its process repository,
+    /// as Custodian reports it. Keyed by the install's root folder; absent
+    /// when the install has no Custodian or Web Desktop doesn't name it.
+    /// </summary>
+    public IReadOnlyDictionary<string, RepositoryCheck> CustodianRepositories { get; init; } =
+        new Dictionary<string, RepositoryCheck>();
 
     /// <summary>NiFi services (NSSM running nifi.cmd), as NiFi Deploy installs them.</summary>
     public IReadOnlyList<NiFiService> NiFiServices { get; init; } = Array.Empty<NiFiService>();
@@ -114,6 +123,8 @@ public static class Dashboard
                     rows.Add(AddressRow(findings));
                 if (s.PinnedBindings.TryGetValue(install.RootFolder, out var pinned) && pinned.Count > 0)
                     rows.Add(PinnedRow(pinned));
+                if (s.CustodianRepositories.TryGetValue(install.RootFolder, out var repo))
+                    rows.Add(CustodianRow(repo));
             }
         }
 
@@ -190,6 +201,15 @@ public static class Dashboard
             : new("GraniteWMS", HealthState.Attention, "Granite sites bound to one IP address",
                 $"{list}: they stop answering if the IP changes, and never answer over IPv6. Use Change server address to bind them to all addresses.");
     }
+
+    public static StatusRow CustodianRow(RepositoryCheck check) => check.Health switch
+    {
+        RepositoryHealth.Connected => new("GraniteWMS", HealthState.Ok, "Custodian process repository", "Connected"),
+        RepositoryHealth.TokenRejected => new("GraniteWMS", HealthState.Missing, "Custodian can't reach the process repository",
+            "Token rejected by GitHub. " + CustodianRepository.TokenAdvice),
+        RepositoryHealth.Failed => new("GraniteWMS", HealthState.Missing, "Custodian can't reach the process repository", check.Message),
+        _ => new("GraniteWMS", HealthState.Info, "Custodian process repository", "Not checked: " + check.Message)
+    };
 
     private static int Severity(AddressHealth h) => h switch
     {

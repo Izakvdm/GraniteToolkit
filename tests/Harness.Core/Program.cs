@@ -161,6 +161,17 @@ Check(Enum.GetNames<LogLevel>().SequenceEqual(new[] { "Info", "Success", "Warnin
     Check(SiteBindings.IsAllAddresses(new IisBinding("https", "0.0.0.0", 1, "")) && SiteBindings.IsAllAddresses(new IisBinding("https", "", 1, "")), "all-addresses forms");
 }
 
+// ---- Custodian process repository ---------------------------------------------------
+{
+    string bad = "{\"StoreConnection\":\"Connection error One or more errors occurred. (Bad credentials). Please double-check your settings, ensuring that your repoID and token are correct and not expired.\",\"Stores\":[\"Approved\"],\"ConnectionValid\":true}";
+    Check(CustodianRepository.FromConfig(bad).Health == RepositoryHealth.TokenRejected, "Bad credentials: token rejected (the real reply from Ultra)");
+    Check(CustodianRepository.FromConfig("{\"StoreConnection\":\"Connection error No such host is known.\"}").Health == RepositoryHealth.Failed, "other connection error: failed");
+    Check(CustodianRepository.FromConfig("{\"StoreConnection\":\"Connected\"}").Health == RepositoryHealth.Connected, "connected");
+    Check(CustodianRepository.FromConfig("{\"Stores\":[]}").Health == RepositoryHealth.Unknown && CustodianRepository.FromConfig("<html>").Health == RepositoryHealth.Unknown, "no StoreConnection or not JSON: unknown");
+    Check(CustodianRepository.FromResponse(401, "").Health == RepositoryHealth.Unknown && CustodianRepository.FromResponse(500, bad).Health == RepositoryHealth.Unknown, "sign-in or server error: unknown, never a false alarm");
+    Check(CustodianRepository.ConfigUrl("https://Ultra:40082/") == "https://Ultra:40082/config", "config URL without a double slash");
+}
+
 // ---- CertificateCoverage ------------------------------------------------------------
 {
     Check(CertificateCoverage.Covers(new[] { "ULTRA", "192.168.68.63" }, "ultra"), "exact name, any case");

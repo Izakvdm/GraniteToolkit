@@ -223,7 +223,7 @@ public sealed class InstallRunner
         // there's nothing to clash with, but something else may already
         // listen on a port.
         var sites = await IisService.ListSitesAsync(token);
-        var siteCheck = SiteConflictCheck.Evaluate(sites, LocalAddressDiscovery.ListeningTcpPorts(), c);
+        var siteCheck = SiteConflictCheck.Evaluate(sites, LocalAddressDiscovery.ListeningTcpPorts(), c, await PortScanner.ExcludedRangesAsync(token));
         errors.AddRange(siteCheck.Errors);
         warnings.AddRange(siteCheck.Warnings);
 
@@ -238,7 +238,14 @@ public sealed class InstallRunner
         {
             string dst = c.InstallPathFor(comp);
             if (Directory.Exists(dst) && Directory.EnumerateFileSystemEntries(dst).Any())
-                warnings.Add($"{dst} is not empty; it will be renamed to a .bak folder first.");
+            {
+                // Alongside means the existing install is left alone, so its
+                // folders must not be moved to .bak under it.
+                if (c.InstallAlongside)
+                    errors.Add($"{dst} already has files in it, and \"Install alongside\" is ticked on Step 4. Choose a different install folder on Step 1 (e.g. {c.InstallRoot.TrimEnd('\\')}{(PortPlanner.ReleaseVersion(c.ReleaseSourcePath) is string v ? " V" + v : " 2")}) so the existing install's files aren't moved.");
+                else
+                    warnings.Add($"{dst} is not empty; it will be renamed to a .bak folder first.");
+            }
         }
 
         foreach (string w in warnings) Log(LogLevel.Warning, w);

@@ -19,7 +19,8 @@ public static class SiteConflictCheck
 {
     public sealed record Result(List<string> Errors, List<string> Warnings, List<IisSite> SitesToReplace);
 
-    public static Result Evaluate(IReadOnlyList<IisSite> existingSites, ISet<int> listeningPorts, InstallContext c)
+    /// <param name="excludedRanges">Windows' reserved port ranges (v0.7.0); IIS can't bind inside them.</param>
+    public static Result Evaluate(IReadOnlyList<IisSite> existingSites, ISet<int> listeningPorts, InstallContext c, IReadOnlyList<PortRange>? excludedRanges = null)
     {
         var errors = new List<string>();
         var warnings = new List<string>();
@@ -53,6 +54,9 @@ public static class SiteConflictCheck
                 errors.Add($"Port {s.Port} ({comp.Title}) is already used by the IIS site \"{clash.Name}\", which isn't being replaced. Choose another port on Step 4.");
             else if (!replacedPorts.Contains(s.Port) && listeningPorts.Contains(s.Port) && !existingSites.Any(x => x.Bindings.Any(b => b.Port == s.Port)))
                 errors.Add($"Port {s.Port} ({comp.Title}) is already in use by another program on this server.");
+
+            if (excludedRanges?.FirstOrDefault(r => r.Contains(s.Port)) is { Start: > 0 } reserved)
+                errors.Add($"Port {s.Port} ({comp.Title}) is reserved by Windows (excluded range {reserved}, usually Hyper-V, WSL or Docker), so IIS can't use it. Use \"Find free ports\" on Step 4.");
         }
 
         return new Result(errors, warnings, toReplace);

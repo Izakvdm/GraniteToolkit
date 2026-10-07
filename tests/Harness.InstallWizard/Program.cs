@@ -145,7 +145,7 @@ Check(apiConn.MaxPoolSize == 25 && apiConn.MinPoolSize == 5, "Business API: ship
 Check(apiConn.TrustServerCertificate, "Business API: TrustServerCertificate on");
 Check(!ConnStr(api, "CONNECTION").Contains("Trust Server Certificate"), "Business API: classic TrustServerCertificate keyword (System.Data.SqlClient accepts it)");
 var apiOrigins = api["AllowedOrigins"]!.AsArray().Select(n => n!.GetValue<string>()).ToList();
-Check(apiOrigins.Contains("https://192.168.1.50:40099") && apiOrigins.Contains("https://SRV01:40099") && apiOrigins.Contains("https://localhost:40080"), $"Business API: CORS covers Web Desktop and Process App by IP, name and localhost ({apiOrigins.Count} origins)");
+Check(apiOrigins.Contains("https://192.168.1.50:40099") && apiOrigins.Contains("https://srv01:40099") && apiOrigins.Contains("https://localhost:40080"), $"Business API: CORS covers Web Desktop and Process App by IP, name and localhost ({apiOrigins.Count} origins)");
 Check(api["DateTimeFormat"]!.GetValue<string>() == "dd'/'MM'/'yyyy", "Business API: DateTimeFormat dd'/'MM'/'yyyy");
 Check(apiResult.Json.Contains("dd'/'MM'/'yyyy"), "Business API: apostrophes written literally, not \\u0027");
 Check(api["servicestack"]?["license"]?.GetValue<string>().Length > 50, "Business API: ServiceStack licence carried over");
@@ -477,6 +477,113 @@ Console.WriteLine($"  This release: hotfix database scripts = {HotfixScripts.Des
     + string.Join(", ", GraniteComponent.CoreStack.Where(c => v6ctx.HotfixPathFor(c) is not null).Select(c => Path.GetFileName(v6ctx.HotfixPathFor(c)!))));
 Check(GraniteComponent.CoreStack.All(c => Directory.Exists(v6ctx.ReleasePathFor(c))), "this release: every core app folder resolves");
 Directory.Delete(v7Work, recursive: true);
+
+Console.WriteLine();
+Console.WriteLine("=== 13. Custodian token (chosen file, release copy, nothing bundled, upsert) ===");
+// A made-up Custodian.md in the release's shape. No real token or key lives in the toolkit, its tests included.
+string fakeToken = Convert.ToBase64String(Enumerable.Range(0, 192).Select(i => (byte)(i * 7)).ToArray());
+string fakeKey = Convert.ToBase64String(Enumerable.Range(0, 16).Select(i => (byte)(i + 1)).ToArray());
+string fakeMd = $"# Custodian\n\n```sql\nUPDATE SystemSettings SET Value = '{fakeToken}', EncryptionKey = '{fakeKey}', Version = 7 WHERE [Key] = 'Token' AND Application = 'Granite.Custodian'\n```\n";
+var parsed = CustodianToken.Parse(fakeMd, "test");
+Check(parsed.Token == fakeToken && parsed.Token.Length == 256, "token read whole (256 base64 chars)");
+Check(parsed.EncryptionKey == fakeKey && parsed.Version == 7, "EncryptionKey and Version read");
+Check(!CustodianToken.UpsertSql.Contains(fakeToken) && !CustodianToken.UpsertSql.Contains(fakeKey), "upsert SQL carries no token or key, only parameters");
+if (File.Exists(mdPath))
+    Check(CustodianToken.Parse(File.ReadAllText(mdPath), "release").Token.Length > 0, "this release's Hotfix\\Custodian.md parses");
+else Console.WriteLine("  (no Hotfix\\Custodian.md in this release)");
+
+bool Rejects(string md)
+{
+    try { CustodianToken.Parse(md, "test"); return false; } catch (InvalidDataException) { return true; }
+}
+Check(Rejects("# nothing here"), "a file with no SQL block is refused");
+Check(Rejects(fakeMd.Replace(fakeToken, "not base64!")), "a token that isn't base64 is refused");
+Check(Rejects(fakeMd.Replace(fakeKey, "")), "a missing EncryptionKey is refused");
+Check(Rejects(fakeMd.Replace("Version = 7", "Version = x")), "a missing Version is refused");
+Check(Rejects("```sql\nUPDATE SystemSettings SET Value = 'abc' WHERE [Key] = 'Other'\n```"), "SQL for a different setting is refused");
+
+string chosen = Path.Combine(Path.GetTempPath(), $"custodian-{Guid.NewGuid():N}.md");
+File.WriteAllText(chosen, fakeMd);
+string noRelease = Path.Combine(Path.GetTempPath(), "no-such-folder", "Custodian.md");
+Check(CustodianToken.ChooseSource(null, noRelease) is null && CustodianToken.ChooseSource("", null) is null, "no file and no release copy: no token source (nothing bundled)");
+Check(CustodianToken.ChooseSource(chosen, File.Exists(mdPath) ? mdPath : null)?.Label.Contains("chosen") == true, "a file chosen on Step 3 wins over the release copy");
+if (File.Exists(mdPath)) Check(CustodianToken.ChooseSource(null, mdPath)?.Label.Contains("from the release") == true, "otherwise the release's Hotfix\\Custodian.md");
+bool missingThrows = false;
+try { CustodianToken.ChooseSource(chosen + ".gone", null); } catch (FileNotFoundException) { missingThrows = true; }
+Check(missingThrows, "a chosen file that has gone stops the install rather than silently skipping the token");
+File.Delete(chosen);
+string? srcRoot = AppContext.BaseDirectory;
+while (srcRoot is not null && !File.Exists(Path.Combine(srcRoot, "GraniteToolkit.sln"))) srcRoot = Path.GetDirectoryName(srcRoot.TrimEnd(Path.DirectorySeparatorChar));
+if (srcRoot is not null)
+{
+    Check(!File.Exists(Path.Combine(srcRoot, "src", "GraniteInstallWizard", "Resources", "Custodian.md")), "no Custodian.md in the wizard's source");
+    Check(!File.ReadAllText(Path.Combine(srcRoot, "src", "GraniteInstallWizard", "GraniteInstallWizard.csproj")).Contains("Custodian.md"), "nothing token-shaped embedded in the exe");
+}
+
+Check(CustodianToken.UpsertSql.Contains("N'GRANITECUSTODIAN', N'Granite.Custodian'"), "upsert looks under both application names");
+Check(CustodianToken.UpsertSql.Contains("@overwrite = 1 OR"), "upsert keeps an existing token unless told to overwrite");
+Check(CustodianToken.DescribeResult(0, 1, 0, true).Contains("added"), "result text: inserted");
+Check(CustodianToken.DescribeResult(1, 0, 1, true).Contains("1 Token setting updated"), "result text: updated");
+Check(CustodianToken.DescribeResult(1, 0, 0, false).Contains("left as it is"), "result text: existing token kept");
+
+Console.WriteLine();
+Console.WriteLine("=== 14. Installing alongside: free ports, site names, Windows reserved ranges ===");
+var alDefaults = GraniteComponent.CoreStack.Select(c => (c.Key, c.DefaultPort)).ToList();
+
+// Nothing installed yet: the defaults are kept.
+var alEmpty = new PortUse(Array.Empty<IisSite>(), Array.Empty<int>(), Array.Empty<PortRange>());
+var alP0 = PortPlanner.Suggest(alDefaults, alEmpty.IsFree);
+Check(GraniteComponent.CoreStack.All(c => alP0[c.Key] == c.DefaultPort), "empty server: default ports kept");
+
+// V6 on the defaults (Ultra's sites from section 10): the whole block moves up by 100.
+var alOnUltra = new PortUse(ultra, ultra.SelectMany(s => s.Bindings).Select(b => b.Port), Array.Empty<PortRange>());
+var alP1 = PortPlanner.Suggest(alDefaults, alOnUltra.IsFree);
+Check(alP1[GraniteComponent.WebDesktop] == 40199 && alP1[GraniteComponent.BusinessApi] == 40181 && alP1[GraniteComponent.Custodian] == 40182 && alP1[GraniteComponent.ProcessApp] == 40180,
+    $"V6 on the defaults: V7 gets 40199/40181/40182/40180 ({string.Join("/", alP1.Values)})");
+Check(alOnUltra.WhyTaken(40099)!.Contains("Granite WebDesktop"), "a taken port names the IIS site holding it");
+
+// One port of the +100 block taken by another program: the next whole block (+200) is used.
+var alP2 = PortPlanner.Suggest(alDefaults, new PortUse(ultra, ultra.SelectMany(s => s.Bindings).Select(b => b.Port).Append(40181), Array.Empty<PortRange>()).IsFree);
+Check(alP2.Values.All(p => p >= 40280 && p <= 40299), $"+100 block partly taken: the +200 block is used ({string.Join("/", alP2.Values)})");
+
+// Windows reserves 40000-40999 (Hyper-V/WSL style): every block is blocked, so ports are picked one by one above it.
+var alReservedUse = new PortUse(ultra, Array.Empty<int>(), new[] { new PortRange(40000, 40999) });
+var alP3 = PortPlanner.Suggest(alDefaults, alReservedUse.IsFree);
+Check(alP3.Values.All(p => p >= 41000 && p <= PortPlanner.SafeMax) && alP3.Values.Distinct().Count() == 4, $"reserved range: four distinct ports above it ({string.Join("/", alP3.Values)})");
+Check(alReservedUse.WhyTaken(40500)!.Contains("reserved by Windows"), "a port in a reserved range says so");
+
+// Replacing the V6 sites frees their ports.
+var alReplacing = new PortUse(ultra, ultra.SelectMany(s => s.Bindings).Select(b => b.Port), Array.Empty<PortRange>(), ultra.Select(s => s.Name));
+Check(alReplacing.IsFree(40099) && alReplacing.IsFree(40080), "sites being replaced give their ports back");
+Check(!alReplacing.IsFree(80) && !alOnUltra.IsFree(50000), "ports below 1024 or above 49151 are never suggested");
+
+// netsh output, as Windows prints it.
+string alNetshOut = "\r\nProtocol tcp Port Exclusion Ranges\r\n\r\nStart Port    End Port\r\n----------    --------\r\n      5357        5357\r\n     50000       50059     *\r\n     40180       40279\r\n\r\n* - Administered port exclusions.\r\n";
+var alParsed = PortPlanner.ParseExcludedRanges(alNetshOut);
+Check(alParsed.Count == 3 && alParsed[1] == new PortRange(50000, 50059) && alParsed[2] == new PortRange(40180, 40279), $"netsh excluded ranges parsed, administered (*) ones included ({string.Join(", ", alParsed)})");
+Check(PortPlanner.ParseExcludedRanges("").Count == 0, "no netsh output: no ranges");
+var alDodge = PortPlanner.Suggest(alDefaults, new PortUse(ultra, ultra.SelectMany(s => s.Bindings).Select(b => b.Port), alParsed).IsFree);
+Check(alDodge.Values.All(p => p < 40180 || p > 40279) && !alDodge.Values.Any(p => ultra.Any(s => s.Bindings.Any(b => b.Port == p))), $"suggestion steps around both V6 and the reserved block ({string.Join("/", alDodge.Values)})");
+
+// Pre-flight blocks a reserved port too.
+var alRctx = new InstallContext();
+alRctx.Sites[GraniteComponent.WebDesktop].Port = 40200;
+var alRcheck = SiteConflictCheck.Evaluate(Array.Empty<IisSite>(), new HashSet<int>(), alRctx, new[] { new PortRange(40150, 40250) });
+Check(alRcheck.Errors.Count == 1 && alRcheck.Errors[0].Contains("reserved by Windows"), "pre-flight: a port in a Windows reserved range is an error");
+
+// Site names.
+var alBaseNames = GraniteComponent.CoreStack.Select(c => c.DefaultSiteName).ToList();
+Check(PortPlanner.SuggestNameSuffix(alBaseNames, new[] { "Default Web Site" }, @"C:\x\Granite V7.0.zip") == "", "no Granite sites yet: names unchanged");
+Check(PortPlanner.SuggestNameSuffix(alBaseNames, ultra.Select(s => s.Name), @"C:\Users\izakm\Documents\Granite WMS\Granite V7.0.zip") == " V7", "V6 installed, V7 release: suffix \" V7\"");
+Check(PortPlanner.SuggestNameSuffix(alBaseNames, ultra.Select(s => s.Name).Concat(alBaseNames.Select(n => n + " V7")), "Granite V7.0") == " 2", "V7 names taken too: \" 2\"");
+Check(PortPlanner.SuggestNameSuffix(alBaseNames, ultra.Select(s => s.Name), @"D:\release") == " 2", "no version in the release name: \" 2\"");
+Check(PortPlanner.ReleaseVersion(@"C:\Granite WMS\Granite V6.0\") == "6" && PortPlanner.ReleaseVersion(null) is null, "release version read from a folder name, trailing slash and all");
+
+// Profiles keep the choice; replace is still never restored.
+var alActx = new InstallContext { InstallAlongside = true, ReplaceExistingSites = true };
+var alAback = new InstallContext();
+InstallProfile.FromJson(InstallProfile.From(alActx, "test").ToJson()).ApplyTo(alAback);
+Check(alAback.InstallAlongside && !alAback.ReplaceExistingSites, "profile keeps \"install alongside\", never \"replace\"");
 
 Console.WriteLine();
 Console.WriteLine($"{passes} passed, {failures} failed.");

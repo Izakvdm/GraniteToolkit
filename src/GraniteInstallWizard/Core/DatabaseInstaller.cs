@@ -5,7 +5,7 @@ namespace GraniteInstallWizard.Core;
 
 /// <summary>
 /// The database stage: app login, GraniteDatabase_Create.sql, the login's
-/// database user, then the Hotfix scripts.
+/// database user, the Hotfix scripts, then the Custodian token.
 /// </summary>
 public sealed class DatabaseInstaller
 {
@@ -57,6 +57,27 @@ public sealed class DatabaseInstaller
             }
         }
 
+        // The Custodian token is read and checked here too, before anything
+        // is created. See CustodianToken for why it isn't left to the hotfix.
+        bool setToken = c.IsEnabled(GraniteComponent.Custodian);
+        // A file picked on Step 3 is a deliberate replacement (a token GitHub
+        // now refuses), so it overwrites; the release's copy only fills a gap.
+        bool overwriteToken = createNew || !string.IsNullOrWhiteSpace(c.CustodianTokenFile);
+        CustodianTokenValues? tokenValues = null;
+        string tokenSource = "";
+        if (setToken)
+        {
+            if (c.CustodianTokenSource is { } source)
+            {
+                tokenSource = source.Label;
+                tokenValues = CustodianToken.Parse(File.ReadAllText(source.Path), tokenSource);
+            }
+            else
+            {
+                Log(LogLevel.Warning, CustodianToken.NoSourceText);
+            }
+        }
+
         if (c.DryRun)
         {
             Log(LogLevel.DryRun, c.ResetExistingAppLoginPassword
@@ -69,6 +90,10 @@ public sealed class DatabaseInstaller
             Log(LogLevel.DryRun, $"Would map login {c.AppLogin} into {c.DatabaseName} as db_owner.");
             foreach (var (label, script) in hotfixScripts)
                 Log(LogLevel.DryRun, $"Would run {label} ({script.Batches.Count} batch{(script.Batches.Count == 1 ? "" : "es")}).");
+            if (tokenValues is not null)
+                Log(LogLevel.DryRun, overwriteToken
+                    ? $"Would set the Custodian token from {tokenSource} (version {tokenValues.Version})."
+                    : $"Would add the Custodian token from {tokenSource} if {c.DatabaseName} has none (an existing token is kept).");
             return;
         }
 
@@ -147,6 +172,28 @@ public sealed class DatabaseInstaller
                 if (!string.Equals(db.Database, c.DatabaseName, StringComparison.OrdinalIgnoreCase))
                     db.ChangeDatabase(c.DatabaseName);
                 await RunScriptAsync(db, label, script, token);
+            }
+
+            // 5. The Custodian token, last, so it wins over anything the
+            //    create script or a hotfix seeded.
+            if (tokenValues is not null)
+            {
+                if (!string.Equals(db.Database, c.DatabaseName, StringComparison.OrdinalIgnoreCase))
+                    db.ChangeDatabase(c.DatabaseName);
+                Log(LogLevel.Info, $"Setting the Custodian token from {tokenSource}...");
+                await using var cmd = db.CreateCommand();
+                cmd.CommandText = CustodianToken.UpsertSql;
+                cmd.CommandTimeout = 120;
+                cmd.Parameters.Add("@token", System.Data.SqlDbType.NVarChar, -1).Value = tokenValues.Token;
+                cmd.Parameters.Add("@key", System.Data.SqlDbType.NVarChar, -1).Value = tokenValues.EncryptionKey;
+                cmd.Parameters.Add("@version", System.Data.SqlDbType.Int).Value = tokenValues.Version;
+                cmd.Parameters.Add("@user", System.Data.SqlDbType.NVarChar, 50).Value = CustodianToken.AuditUser;
+                cmd.Parameters.Add("@overwrite", System.Data.SqlDbType.Bit).Value = overwriteToken;
+                await using var reader = await cmd.ExecuteReaderAsync(token);
+                if (!await reader.ReadAsync(token))
+                    throw new InvalidOperationException("Setting the Custodian token returned no result.");
+                string message = CustodianToken.DescribeResult(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2), overwriteToken);
+                Log(LogLevel.Success, message);
             }
         }
     }

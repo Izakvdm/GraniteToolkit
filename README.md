@@ -19,7 +19,7 @@ Security design and the release checklist are in [SECURITY.md](SECURITY.md).
 | `src/GraniteToolkit` | The dashboard and launcher, `GraniteToolkit.exe` |
 | `src/Granite.Toolkit.Core` | Shared code: processes, logging, IIS commands, SQL instance discovery, Granite install discovery, prerequisite checks, signature and folder security |
 | `src/Granite.Toolkit.UI` | Shared Windows Forms wizard base class |
-| `src/GraniteInstallWizard` | Core stack installer, v0.5.2 |
+| `src/GraniteInstallWizard` | Core stack installer, v0.7.0 |
 | `src/GraniteBiDeployWizard` | BI deployment wizard, v1.6.1 |
 | `src/GraniteNiFiDeploy` | NiFi Deploy: Apache NiFi and the Granite CSV import, v0.1.0 |
 | `src/GraniteDbSwitcher` | Developer tool, v0.1.1 |
@@ -105,6 +105,14 @@ Package versions are all in `Directory.Packages.props`. Module versions stay in 
 | NiFi Deploy, live | `dotnet run --project tests\Harness.NiFiDeploy -c Release -- live <NiFi home> <user> <password> [port]` | a running NiFi 2.x **without** the Granite flow (it refuses to touch an existing Granite CSV Import context). Uploads the flow under a test name, sets parameters, runs NiFi's SQL check, starts, then stops and deletes it |
 
 ## Changes in this version
+
+**0.3.2** (2026-10-06)
+- **Install Wizard 0.7.0: install alongside an existing Granite install** (V7 next to V6, a test stack next to live). Step 4 has a new "Install alongside" option: it adds a suffix to the site names (" V7" from the release name, otherwise " 2", " 3"...), picks free ports, and switches "Replace existing IIS sites" off. A "Find free ports" button does the port part on its own, and Step 4 says straight away whether the chosen ports are free and, if not, what holds them.
+- Ports are checked against the IIS sites on the server, anything else listening, and the port ranges Windows reserves for Hyper-V, WSL and Docker (`netsh int ipv4 show excludedportrange`), which IIS can't bind to. Suggestions stay between 1024 and 49151 and move as a block where possible (40080-40099 becomes 40180-40199), so the second install is easy to recognise.
+- Pre-flight now blocks a port in a Windows reserved range, and, with "Install alongside" ticked, an install folder that already holds files (the existing install's folders would otherwise be moved to `.bak`). The review on Step 6 shows when an install is alongside, and profiles remember the option.
+
+**0.3.1** (2026-10-05)
+- **Install Wizard 0.6.0: the Custodian token is set on every install that includes Custodian, and nothing secret is bundled.** Before, it only reached the database through V6.0's `Hotfix\Custodian.md`, and only with the Hotfix database scripts ticked; V7.0 doesn't ship the file at all. Now it's its own step, from a Custodian.md picked on Step 3 (which replaces any token already in the database) or else the release's `Hotfix\Custodian.md` (which only fills a gap). The wizard carries no copy of its own: the token opens a shared GitHub repository, and a copy compiled into a signed exe would ship to every server and go stale (the 28 September token is already refused with "Bad credentials"). The token, key and version are read out of the file and written with a parameterised insert-or-update, so the file's SQL is never run as-is. Verification asks Custodian whether it can reach its process repository and says plainly when GitHub refuses the token; the dashboard shows the same check as a red row.
 
 **0.3.0** (2026-10-05)
 - **Granite Attach is no longer part of the toolkit.** It's a separate commercial product, so its installer moved back to the Granite Attach repo (as standalone v0.2.0) and isn't in the toolkit's solution, MSI or portable zip any more. The dashboard still shows, read-only, whether Attach is installed on a server, but has no tile for it. The harness checks that no Attach module is in the catalog. MSIs and zips from 0.1.0 to 0.2.1 still contain the Attach installer: don't hand those out.

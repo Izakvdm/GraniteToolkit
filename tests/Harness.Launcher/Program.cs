@@ -170,6 +170,12 @@ Check(BiTaskParser.Parse("").Count == 0, "empty output");
     Check(Dashboard.PinnedRow(new[] { oldIp[0] with { Health = AddressHealth.DhcpAddress } }).State == HealthState.Attention, "site on this machine's IP: amber");
     var pinSnap = new ServerSnapshot { Installs = new[] { inst }, PinnedBindings = new Dictionary<string, IReadOnlyList<PinnedBinding>> { [inst.RootFolder] = oldIp } };
     Check(Dashboard.StatusRows(pinSnap).Any(r => r.Title.Contains("old IP")) && Dashboard.ForModule(ModuleId.Address, pinSnap).Suggested, "pinned old IP: row and suggested tile");
+    var dead = new RepositoryCheck(RepositoryHealth.TokenRejected, "Connection error (Bad credentials)");
+    var deadRow = Dashboard.CustodianRow(dead);
+    Check(deadRow.State == HealthState.Missing && deadRow.Detail.Contains("Custodian.md"), "rejected Custodian token: red row saying what to get");
+    Check(Dashboard.CustodianRow(new RepositoryCheck(RepositoryHealth.Unknown, "x")).State == HealthState.Info, "unchecked repository: info, not an alarm");
+    var custSnap = new ServerSnapshot { Installs = new[] { inst }, CustodianRepositories = new Dictionary<string, RepositoryCheck> { [inst.RootFolder] = dead } };
+    Check(Dashboard.StatusRows(custSnap).Any(r => r.Title == "Custodian can't reach the process repository"), "Custodian row appears under the install");
     Check(!ModuleCatalog.All.Single(m => m.Id == ModuleId.Address).DeveloperOnly, "Change address ships to client servers");
 }
 

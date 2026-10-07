@@ -40,6 +40,8 @@
     <Compile Include="../../src/GraniteInstallWizard/Core/ReleaseSource.cs" Link="Core/ReleaseSource.cs" />
     <Compile Include="../../src/GraniteInstallWizard/Core/ReleaseLayout.cs" Link="Core/ReleaseLayout.cs" />
     <Compile Include="../../src/GraniteInstallWizard/Core/HotfixScripts.cs" Link="Core/HotfixScripts.cs" />
+    <Compile Include="../../src/GraniteInstallWizard/Core/CustodianToken.cs" Link="Core/CustodianToken.cs" />
+    <Compile Include="../../src/GraniteInstallWizard/Core/PortPlanner.cs" Link="Core/PortPlanner.cs" />
     <!-- Linked for their pure Blockers/Warnings rules; nothing here opens a connection. -->
     <Compile Include="../../src/GraniteInstallWizard/Core/SqlServerInspector.cs" Link="Core/SqlServerInspector.cs" />
     <Compile Include="../../src/GraniteInstallWizard/Core/SqlConnectionFactory.cs" Link="Core/SqlConnectionFactory.cs" />

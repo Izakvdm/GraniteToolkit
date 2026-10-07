@@ -1,4 +1,5 @@
 using Granite.Toolkit.Core.Addressing;
+using Granite.Toolkit.Core.Custodian;
 using Granite.Toolkit.Core.Net;
 using System.Runtime.InteropServices;
 using Granite.Toolkit.Core.Discovery;
@@ -23,6 +24,7 @@ public static class ServerProbe
         IReadOnlyList<string> attach = Array.Empty<string>();
         var addresses = new Dictionary<string, IReadOnlyList<AddressFinding>>(StringComparer.OrdinalIgnoreCase);
         var pinned = new Dictionary<string, IReadOnlyList<PinnedBinding>>(StringComparer.OrdinalIgnoreCase);
+        var custodian = new Dictionary<string, RepositoryCheck>(StringComparer.OrdinalIgnoreCase);
         string? scanError = null;
 
         if (GraniteInstallScanner.IisInstalled)
@@ -37,6 +39,9 @@ public static class ServerProbe
                     addresses[install.RootFolder] = ReadApiAddresses(install, machine);
                     pinned[install.RootFolder] = SiteBindings.Pinned(install, machine);
                 }
+                foreach (var install in installs)
+                    if (await CheckCustodianAsync(install, addresses[install.RootFolder], token) is { } check)
+                        custodian[install.RootFolder] = check;
                 attach = GraniteInstallScanner.FindAttachSites(scan, File.Exists, Environment.ExpandEnvironmentVariables)
                     .Select(site => site.Bindings.Count == 0
                         ? site.Name
@@ -64,9 +69,25 @@ public static class ServerProbe
             AttachSites = attach,
             ApiAddresses = addresses,
             PinnedBindings = pinned,
+            CustodianRepositories = custodian,
             BiSyncTasks = await ReadBiTasksAsync(token),
             NiFiServices = await ReadNiFiServicesAsync(token)
         };
+    }
+
+    /// <summary>
+    /// Asks the install's Custodian, at the address Web Desktop uses for it,
+    /// whether it can reach its process repository. A plain read-only GET
+    /// with normal certificate checks: an untrusted certificate shows as
+    /// "not checked" rather than being waved through.
+    /// </summary>
+    private static async Task<RepositoryCheck?> CheckCustodianAsync(GraniteInstall install, IReadOnlyList<AddressFinding> endpoints, CancellationToken token)
+    {
+        if (!install.Apps.Any(a => a.Kind == GraniteAppKind.Custodian)) return null;
+        string? url = endpoints.FirstOrDefault(e => e.Setting.Key == "URL_Custodian")?.Setting.Url;
+        if (url is null || GraniteAddress.HostOf(url) is null) return null;
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        return await CustodianRepository.CheckAsync(http, url, token);
     }
 
     /// <summary>Reads (never writes) each app's appsettings.json for the Business API address.</summary>

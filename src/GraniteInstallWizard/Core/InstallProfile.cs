@@ -42,6 +42,7 @@ public sealed class InstallProfile
     public string PublicHost { get; set; } = string.Empty;
     public Dictionary<string, SiteSettings> Sites { get; set; } = new();
     public bool OpenFirewall { get; set; }
+    public bool InstallAlongside { get; set; }
 
     public CertificateMode CertMode { get; set; }
     public string CertFriendlyName { get; set; } = string.Empty;
@@ -79,6 +80,7 @@ public sealed class InstallProfile
         PublicHost = c.PublicHost,
         Sites = c.Sites.ToDictionary(kv => kv.Key, kv => new SiteSettings { Enabled = kv.Value.Enabled, SiteName = kv.Value.SiteName, Port = kv.Value.Port }),
         OpenFirewall = c.OpenFirewall,
+        InstallAlongside = c.InstallAlongside,
         CertMode = c.CertMode,
         CertFriendlyName = c.CertFriendlyName,
         CertDnsNames = c.CertDnsNames.ToList(),
@@ -108,6 +110,7 @@ public sealed class InstallProfile
         c.DatabaseHotfixChoice = DatabaseHotfixChoice;
         c.ResetExistingAppLoginPassword = false;
         c.ReplaceExistingSites = false;
+        c.InstallAlongside = InstallAlongside;
         c.PublicHost = PublicHost;
         foreach (var (key, s) in Sites)
         {

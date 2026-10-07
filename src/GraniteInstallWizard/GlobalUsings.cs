@@ -8,3 +8,4 @@ global using Granite.Toolkit.Core.Logging;
 global using Granite.Toolkit.Core.Net;
 global using Granite.Toolkit.Core.Processes;
 global using Granite.Toolkit.Core.Sql;
+global using Granite.Toolkit.Core.Custodian;

@@ -146,6 +146,13 @@ public sealed class InstallContext
     /// </summary>
     public bool ReplaceExistingSites { get; set; }
 
+    /// <summary>
+    /// Step 4's "install alongside an existing Granite install": site names
+    /// get a suffix and taken ports are swapped for free ones (PortPlanner).
+    /// Never set together with <see cref="ReplaceExistingSites"/>.
+    /// </summary>
+    public bool InstallAlongside { get; set; }
+
     // ----- Step 5: certificate --------------------------------------------------
     public CertificateMode CertMode { get; set; } = CertificateMode.CreateSelfSigned;
     public string CertFriendlyName { get; set; } = "Granite WMS";
@@ -214,8 +221,14 @@ public sealed class InstallContext
         foreach (string key in keys)
         {
             if (!IsEnabled(key)) continue;
+            // Lower case: browsers send the origin's host in lower case and the
+            // Granite APIs compare AllowedOrigins letter for letter, so
+            // "https://ULTRA:40099" would never match (2026-10-07).
             foreach (string host in AllHostNames())
-                origins.Add($"https://{host}:{Sites[key].Port}");
+            {
+                string origin = $"https://{host.ToLowerInvariant()}:{Sites[key].Port}";
+                if (!origins.Contains(origin)) origins.Add(origin);
+            }
         }
         return origins.ToArray();
     }
@@ -224,6 +237,17 @@ public sealed class InstallContext
         ReleaseLayout.Resolve(ReleaseFolder, "GraniteDatabase", "GraniteDatabase", "GraniteDatabase_Create.sql");
 
     public string HotfixRoot => ReleaseLayout.Resolve(ReleaseFolder, "Hotfix");
+
+    /// <summary>
+    /// A Custodian.md picked on Step 3 (empty: none). Wins over the
+    /// release's Hotfix\Custodian.md. Never saved to a profile: it holds a
+    /// credential, so it's chosen again for each install.
+    /// </summary>
+    public string CustodianTokenFile { get; set; } = string.Empty;
+
+    /// <summary>Where the Custodian token comes from for this install, or null for none.</summary>
+    public (string Label, string Path)? CustodianTokenSource => CustodianToken.ChooseSource(
+        CustodianTokenFile, Directory.Exists(HotfixRoot) ? Path.Combine(HotfixRoot, "Custodian.md") : null);
 
     public string PrerequisitesRoot => ReleaseLayout.Resolve(ReleaseFolder, "GraniteScaffold", "Prerequisites");
 }

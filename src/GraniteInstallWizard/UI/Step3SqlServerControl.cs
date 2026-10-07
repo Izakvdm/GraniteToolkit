@@ -63,6 +63,10 @@ public sealed class Step3SqlServerControl : WizardStepControl
     /// <summary>False when the release has no Hotfix database scripts (V7.0): the box is then disabled and off.</summary>
     private bool _hasDbHotfix = true;
     private readonly CheckBox _chkHotfix = new() { Text = "Apply the Hotfix app files", AutoSize = true };
+    private readonly TextBox _txtTokenFile = new() { Width = 420, ReadOnly = true };
+    private readonly Button _btnTokenBrowse = MakeButton("Browse...", 90, new Padding(6, 0, 0, 0));
+    private readonly Button _btnTokenClear = MakeButton("Clear", 70, new Padding(6, 0, 0, 0));
+    private readonly Label _lblTokenHint = new() { AutoSize = true, MaximumSize = new Size(620, 0), ForeColor = Color.DimGray, Margin = new Padding(0, 4, 0, 8) };
 
     private InstallContext? _context;
 
@@ -113,6 +117,9 @@ public sealed class Step3SqlServerControl : WizardStepControl
         page.Controls.Add(_chkDrop);
         page.Controls.Add(_chkDbHotfix);
         page.Controls.Add(_chkHotfix);
+        page.Controls.Add(MakeFieldLabel("Custodian token (Custodian.md from Granite):"));
+        page.Controls.Add(MakeRow(_txtTokenFile, _btnTokenBrowse, _btnTokenClear));
+        page.Controls.Add(_lblTokenHint);
         Controls.Add(page);
 
         foreach (string name in SqlInstanceDiscovery.GetLocalInstances())
@@ -123,6 +130,22 @@ public sealed class Step3SqlServerControl : WizardStepControl
         _rbWindows.CheckedChanged += (_, _) => UpdateAuthFields();
         _rbSql.CheckedChanged += (_, _) => UpdateAuthFields();
         _btnTest.Click += async (_, _) => await TestAsync();
+        _btnTokenBrowse.Click += (_, _) =>
+        {
+            using var dlg = new OpenFileDialog { Title = "Custodian.md from Granite", Filter = "Custodian token (*.md)|*.md|All files (*.*)|*.*", CheckFileExists = true };
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            try
+            {
+                CustodianToken.Parse(File.ReadAllText(dlg.FileName), Path.GetFileName(dlg.FileName));
+                _txtTokenFile.Text = dlg.FileName;
+            }
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                MessageBox.Show(this, ex.Message, "Not a usable Custodian.md", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            DescribeToken();
+        };
+        _btnTokenClear.Click += (_, _) => { _txtTokenFile.Text = ""; DescribeToken(); };
         _rbCreateNew.CheckedChanged += (_, _) => { if (_rbCreateNew.Checked) OnModeChanged(); };
         _rbUseExisting.CheckedChanged += (_, _) => { if (_rbUseExisting.Checked) OnModeChanged(); };
         _chkDbHotfix.CheckedChanged += (_, _) => { if (!_loading) _dbHotfixChoice = _chkDbHotfix.Checked; };
@@ -282,7 +305,9 @@ public sealed class Step3SqlServerControl : WizardStepControl
         _chkDrop.Checked = context.DropExistingDatabase;
         _chkHotfix.Checked = context.ApplyHotfix;
         _chkResetPassword.Checked = context.ResetExistingAppLoginPassword;
+        _txtTokenFile.Text = context.CustodianTokenFile;
         DescribeHotfix(context);
+        DescribeToken();
         UpdateAuthFields();
         UpdateModeFields(); // sets the hotfix-scripts box from the choice or the mode's default
         _loading = false;
@@ -310,8 +335,24 @@ public sealed class Step3SqlServerControl : WizardStepControl
         if (appFolders.Count == 0) _chkHotfix.Checked = false;
     }
 
+    private void DescribeToken()
+    {
+        if (_context is null) return;
+        bool custodian = _context.IsEnabled(GraniteComponent.Custodian);
+        string release = Path.Combine(_context.HotfixRoot, "Custodian.md");
+        _lblTokenHint.Text = !custodian
+            ? "Custodian isn't being installed, so no token is needed."
+            : _txtTokenFile.Text.Length > 0
+                ? "This file's token is written to the database, replacing any token already there."
+                : File.Exists(release)
+                    ? "Using the release's Hotfix\\Custodian.md. Pick a newer file from Granite if Custodian reports \"Bad credentials\"."
+                    : CustodianToken.NoSourceText;
+        _txtTokenFile.Enabled = _btnTokenBrowse.Enabled = _btnTokenClear.Enabled = custodian;
+    }
+
     public override void OnLeave(InstallContext context)
     {
+        context.CustodianTokenFile = _txtTokenFile.Text;
         context.SqlServer = _cmbServer.Text.Trim();
         context.SqlAuth = _rbSql.Checked ? SqlAuthMode.SqlLogin : SqlAuthMode.Windows;
         context.SqlAdminUser = _txtAdminUser.Text.Trim();
@@ -339,6 +380,13 @@ public sealed class Step3SqlServerControl : WizardStepControl
         { error = "Use a plain login name: letters, digits, _ - and ., starting with a letter."; return false; }
         if (string.IsNullOrEmpty(context.AppPassword)) { error = "Enter a password for the app login (or click Generate)."; return false; }
         if (context.AppPassword != _txtAppPassword2.Text) { error = "The two app login passwords don't match."; return false; }
+
+        if (context.IsEnabled(GraniteComponent.Custodian) && context.CustodianTokenFile.Length > 0)
+        {
+            try { CustodianToken.Parse(File.ReadAllText(context.CustodianTokenFile), Path.GetFileName(context.CustodianTokenFile)); }
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+            { error = $"Custodian token file: {ex.Message}"; return false; }
+        }
 
         if (context.LastSqlCheck is null || context.LastSqlCheckKey != context.SqlCheckKey)
         { error = "Click Test Connection first. It has to pass for the settings currently entered."; return false; }
