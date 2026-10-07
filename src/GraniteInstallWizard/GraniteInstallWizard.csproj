@@ -15,7 +15,7 @@
     <!-- Product metadata -->
     <Product>GraniteWMS Install Wizard</Product>
     <Company>Cradle Technology Services</Company>
-    <Version>0.7.0</Version>
+    <Version>0.7.1</Version>
     <Description>Replacement for Granite.Scaffolding.exe: installs the GraniteWMS core stack (Web Desktop, Business API, Custodian API, Process App) from a V6.0 or V7.0 release, with its database, IIS sites and HTTPS certificate.</Description>
 
     <!-- Creating IIS sites/app pools, installing Windows features and the

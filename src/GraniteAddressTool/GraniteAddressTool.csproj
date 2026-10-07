@@ -14,7 +14,7 @@
     <!-- Product metadata -->
     <Product>GraniteWMS Change Address</Product>
     <Company>Cradle Technology Services</Company>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Description>Moves an installed GraniteWMS stack to a new server address: the Business API address in Web Desktop and Process App, the APIs' allowed origins, and the HTTPS certificate if it doesn't cover the new address.</Description>
   </PropertyGroup>
 

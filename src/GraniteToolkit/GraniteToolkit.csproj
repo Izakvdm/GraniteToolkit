@@ -14,7 +14,7 @@
 
     <!-- Product metadata -->
     <Product>GraniteWMS Toolkit</Product>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <Description>Dashboard and launcher for the GraniteWMS installer modules: shows what's on the server and starts the signed modules installed next to it.</Description>
   </PropertyGroup>
 
