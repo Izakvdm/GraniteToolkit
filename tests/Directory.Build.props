@@ -16,6 +16,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/GraniteAddress.cs" Link="Shared/GraniteAddress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/AddressChange.cs" Link="Shared/AddressChange.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/CertificateCoverage.cs" Link="Shared/CertificateCoverage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../src/Granite.Toolkit.Core/Addressing/SiteBindings.cs" Link="Shared/SiteBindings.cs" />
   </ItemGroup>
 
 </Project>

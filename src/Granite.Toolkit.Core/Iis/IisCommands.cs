@@ -130,18 +130,42 @@ public static class IisCommands
     /// netsh is the standard way. The appid only identifies who registered
     /// the binding.
     /// </summary>
-    public static string[] AddSslCert(int port, string thumbprint, Guid appId) => new[]
+    public static string[] AddSslCert(int port, string thumbprint, Guid appId) => AddSslCert(AllAddresses(port), thumbprint, appId);
+
+    public static string[] AddSslCert(string ipPort, string thumbprint, Guid appId) => new[]
     {
         "http", "add", "sslcert",
-        $"ipport=0.0.0.0:{port}",
+        $"ipport={ipPort}",
         $"certhash={thumbprint}",
         $"appid={{{appId}}}",
         "certstorename=MY"
     };
 
-    public static string[] ShowSslCert(int port) => new[] { "http", "show", "sslcert", $"ipport=0.0.0.0:{port}" };
+    public static string[] ShowSslCert(int port) => ShowSslCert(AllAddresses(port));
+    public static string[] ShowSslCert(string ipPort) => new[] { "http", "show", "sslcert", $"ipport={ipPort}" };
 
-    public static string[] DeleteSslCert(int port) => new[] { "http", "delete", "sslcert", $"ipport=0.0.0.0:{port}" };
+    public static string[] DeleteSslCert(int port) => DeleteSslCert(AllAddresses(port));
+    public static string[] DeleteSslCert(string ipPort) => new[] { "http", "delete", "sslcert", $"ipport={ipPort}" };
+
+    /// <summary>http.sys's ip:port key for all addresses.</summary>
+    public static string AllAddresses(int port) => $"0.0.0.0:{port}";
+
+    /// <summary>http.sys's ip:port key for an IIS binding address ("192.168.1.5", "[fe80::1]", "*").</summary>
+    public static string IpPort(string address, int port)
+    {
+        if (address is "*" or "" or "0.0.0.0") return AllAddresses(port);
+        return address.Contains(':') && !address.StartsWith('[') ? $"[{address}]:{port}" : $"{address}:{port}";
+    }
+
+    /// <summary>Replaces a site's whole binding list ("https/*:40099:,http/*:80:").</summary>
+    public static string[] SetSiteBindings(string site, string bindingList) => new[]
+    {
+        "set", "site", $"/site.name:{site}", $"/bindings:{bindingList}"
+    };
+
+    /// <summary>A binding list in appcmd's form, exactly as the bindings are now (for undo).</summary>
+    public static string BindingList(IEnumerable<IisBinding> bindings) =>
+        string.Join(",", bindings.Select(b => $"{b.Protocol}/{b.Address}:{b.Port}:{b.HostName}"));
 
     /// <summary>
     /// Modify rights for the pool identity on the app folder, inherited by

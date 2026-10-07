@@ -32,7 +32,7 @@ internal sealed class MainForm : Form
     private IReadOnlyList<GraniteInstall> _installs = Array.Empty<GraniteInstall>();
     private InstallState? _state;
     private AddressPlan? _plan;
-    private CertificatePlan? _certPlan;
+    private ServerPlan? _serverPlan;
     private bool _busy;
 
     public MainForm()
@@ -184,11 +184,19 @@ internal sealed class MainForm : Form
             _current.Items.Add(item);
         }
 
+        foreach (var p in state.Pinned)
+        {
+            _current.Items.Add(new ListViewItem(new[] { p.App.Title, "IIS binding", $"{p.Binding.Protocol} {p.Binding.Address}:{p.Binding.Port}",
+                p.Health == AddressHealth.NotThisMachine ? "Old IP: site doesn't answer" : "Tied to one IP (breaks if it changes)" })
+            { ForeColor = p.Health == AddressHealth.NotThisMachine ? Bad : Warn });
+        }
+
         var bound = state.Certificates.Where(c => c.Certificate is not null).DistinctBy(c => c.Thumbprint).ToList();
         _lblCert.Text = bound.Count == 0
             ? "No certificate found on the Granite sites' HTTPS ports."
             : string.Join(Environment.NewLine, bound.Select(c =>
-                $"{(c.SelfSigned ? "Self-signed" : "Issued by " + c.Certificate!.Issuer)}, valid to {c.Certificate!.NotAfter:yyyy-MM-dd}, for: {string.Join(", ", c.Names)}"));
+                $"{(c.SelfSigned ? "Self-signed" : "Issued by " + c.Certificate!.Issuer)}{(c.Trusted ? "" : " (NOT trusted on this server)")}, valid to {c.Certificate!.NotAfter:yyyy-MM-dd}, " +
+                $"ports {string.Join(", ", state.Certificates.Where(x => x.Thumbprint == c.Thumbprint).Select(x => x.Port).Distinct())}, for: {string.Join(", ", c.Names)}"));
     }
 
     private void FillSuggestions(InstallState state)
@@ -235,29 +243,32 @@ internal sealed class MainForm : Form
         if (!GraniteAddress.IsValidNewHost(host, out string error)) { _output.Text = error; return; }
 
         _plan = AddressChange.Plan(_state.Files, host, _state.Machine);
-        _certPlan = AddressApplier.PlanCertificate(_state, host);
+        _serverPlan = AddressApplier.PlanServer(_state, host);
 
         var lines = new List<string> { $"Moving {_state.Install.RootFolder} to {host}", "" };
         if (_plan.NothingToDo) lines.Add("The settings already use this address. Nothing to change in the config files.");
         foreach (var c in _plan.Changes)
             lines.Add($"{AddressChange.Title(c.App),-13} {c.Setting,-22} {c.Old}  ->  {c.New}");
         lines.Add("");
-        lines.Add("Certificate: " + _certPlan.Summary);
+        foreach (string line in _serverPlan.Summary) lines.Add("IIS: " + line);
         foreach (string note in _plan.Notes) lines.Add("Note: " + note);
         lines.Add("");
-        lines.Add(_certPlan.Blocked
+        lines.Add(_serverPlan.Blocked
             ? "Can't apply until the certificate question above is sorted."
-            : $"Apply backs up each file it changes to {Path.Combine(ToolkitPaths.DataRoot, "Backups")} (administrators only), makes the changes, recycles the Granite app pools and checks the new address answers.");
+            : _plan.NothingToDo && _serverPlan.NothingToDo
+                ? "Nothing to change."
+                : $"Apply backs up each file it changes to {Path.Combine(ToolkitPaths.DataRoot, "Backups")} (administrators only), makes the changes, recycles the Granite app pools and checks the new address answers.");
         _output.Text = string.Join(Environment.NewLine, lines);
-        _btnApply.Enabled = !_certPlan.Blocked && (!_plan.NothingToDo || _certPlan.Reissue);
+        _btnApply.Enabled = !_serverPlan.Blocked && !(_plan.NothingToDo && _serverPlan.NothingToDo);
     }
 
     private async Task ApplyAsync()
     {
-        if (_state is null || _plan is null || _certPlan is null) return;
+        if (_state is null || _plan is null || _serverPlan is null) return;
         var answer = MessageBox.Show(this,
             $"Move {_state.Install.RootFolder} to {_plan.NewHost}?\n\nThe Granite app pools are recycled, so anyone logged in will need to log in again." +
-            (_certPlan.Reissue ? "\n\nA new HTTPS certificate is created. Scanners and PCs that trusted the old one need the new .cer." : ""),
+            (_serverPlan.Unpins.Count > 0 ? "\n\nGranite sites tied to one IP address are bound to all addresses." : "") +
+            (_serverPlan.Reissue ? "\n\nA new HTTPS certificate is created. Scanners and PCs that trusted the old one need the new .cer." : ""),
             Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (answer != DialogResult.Yes) return;
 
@@ -271,7 +282,7 @@ internal sealed class MainForm : Form
         try
         {
             var applier = new AddressApplier(Log);
-            var state = _state; var plan = _plan; var cert = _certPlan;
+            var state = _state; var plan = _plan; var cert = _serverPlan;
             bool ok = await Task.Run(() => applier.ApplyAsync(state, plan, cert, CancellationToken.None));
             _output.AppendText(Environment.NewLine + (ok ? "Address changed. The list above now shows the new settings." : "Not changed. See the log above.") + Environment.NewLine);
         }

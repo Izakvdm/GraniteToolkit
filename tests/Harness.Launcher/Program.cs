@@ -162,6 +162,14 @@ Check(BiTaskParser.Parse("").Count == 0, "empty output");
     var tile = Dashboard.ForModule(ModuleId.Address, snap);
     Check(tile.Suggested && tile.Line.Contains("out of date"), "Change address tile suggested when the address is stale");
     Check(!Dashboard.ForModule(ModuleId.Address, snap with { ApiAddresses = new Dictionary<string, IReadOnlyList<AddressFinding>>() }).Suggested, "not suggested when fine");
+    var wd = new Granite.Toolkit.Core.Discovery.GraniteApp(GraniteAppKind.WebDesktop, "GraniteWebDesktop", "GraniteWebDesktop", @"C:\x",
+        new[] { new Granite.Toolkit.Core.Iis.IisBinding("https", "192.168.68.63", 40099, "") });
+    var oldIp = new[] { new PinnedBinding(wd, wd.Bindings[0], AddressHealth.NotThisMachine) };
+    var pinRow = Dashboard.PinnedRow(oldIp);
+    Check(pinRow.State == HealthState.Missing && pinRow.Detail.Contains("192.168.68.63:40099"), "site on an old IP: red row naming it");
+    Check(Dashboard.PinnedRow(new[] { oldIp[0] with { Health = AddressHealth.DhcpAddress } }).State == HealthState.Attention, "site on this machine's IP: amber");
+    var pinSnap = new ServerSnapshot { Installs = new[] { inst }, PinnedBindings = new Dictionary<string, IReadOnlyList<PinnedBinding>> { [inst.RootFolder] = oldIp } };
+    Check(Dashboard.StatusRows(pinSnap).Any(r => r.Title.Contains("old IP")) && Dashboard.ForModule(ModuleId.Address, pinSnap).Suggested, "pinned old IP: row and suggested tile");
     Check(!ModuleCatalog.All.Single(m => m.Id == ModuleId.Address).DeveloperOnly, "Change address ships to client servers");
 }
 

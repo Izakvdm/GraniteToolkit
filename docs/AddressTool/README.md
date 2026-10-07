@@ -9,11 +9,13 @@ Moves an installed GraniteWMS stack to a new address, for when a server's IP cha
 | Web Desktop | `Business_API_Endpoint`, `URL_Custodian` | Host moved to the new address; port and path kept |
 | Process App | `BusinessApiEndPoint` | Same |
 | Business API, Custodian | `AllowedOrigins` | The new address added on every port already listed. Origins for an old address this server no longer has are removed (it may be another computer now); origins for addresses it still has are kept, so scanners still using them carry on working |
-| All Granite HTTPS sites | Certificate | Only if the bound certificate doesn't cover the new address: a self-signed one is reissued with the old names (minus IPs the server no longer has) plus the new address, trusted on this server, exported to `<install>\Certificates` and bound to every Granite HTTPS port. A certificate from a real CA is never replaced: the tool stops and says which names it does cover |
+| Granite sites tied to one IP | IIS bindings | Bound to all addresses (protocol, port and host name kept), and their own `ip:port` certificate entries removed. A site tied to one IP stops answering when the IP changes and never answers over IPv6, which Windows tries first for its own name. The dashboard shows these red (old IP) or amber (current IP) |
+| All Granite API origins | AllowedOrigins | Written lower case with no trailing slash, as browsers send them; the APIs compare letter for letter |
+| All Granite HTTPS sites | Certificate | Every HTTPS port ends up on one certificate that covers the new address and this server trusts: an existing one if there is one (a covering self-signed certificate that isn't trusted yet is added to Trusted Root). Otherwise Only if the bound certificate doesn't cover the new address: a self-signed one is reissued with the old names (minus IPs the server no longer has) plus the new address, trusted on this server, exported to `<install>\Certificates` and bound to every Granite HTTPS port. A certificate from a real CA is never replaced: the tool stops and says which names it does cover |
 
 Files are edited in place without being re-serialised: only the bytes of the changed values move, so comments, order and line endings stay as they were. Each changed file is backed up first to `C:\ProgramData\Granite Toolkit\Backups\address-<yyyyMMdd-HHmmss>\<app folder>`: admin-only, and never inside a folder IIS serves (the API's settings hold its database password). Then the install's app pools are recycled and the new URLs are requested from the server to check they answer.
 
-If anything fails before the recycle, the files are restored and the old certificate is rebound. The old certificate stays in the store (remove it in certlm.msc once nothing uses it).
+If anything fails before the recycle, every step is undone, newest first: certificate entries, site bindings, then files. The old certificate stays in the store (remove it in certlm.msc once nothing uses it).
 
 ## Choosing the address
 

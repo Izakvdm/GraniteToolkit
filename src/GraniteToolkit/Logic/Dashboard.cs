@@ -35,6 +35,14 @@ public sealed record ServerSnapshot
     public IReadOnlyDictionary<string, IReadOnlyList<AddressFinding>> ApiAddresses { get; init; } =
         new Dictionary<string, IReadOnlyList<AddressFinding>>();
 
+    /// <summary>
+    /// Granite site bindings tied to one IP address instead of all of them,
+    /// keyed by the install's root folder. Such a site stops answering when
+    /// the IP changes and never answers over IPv6.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<PinnedBinding>> PinnedBindings { get; init; } =
+        new Dictionary<string, IReadOnlyList<PinnedBinding>>();
+
     /// <summary>NiFi services (NSSM running nifi.cmd), as NiFi Deploy installs them.</summary>
     public IReadOnlyList<NiFiService> NiFiServices { get; init; } = Array.Empty<NiFiService>();
 }
@@ -104,6 +112,8 @@ public static class Dashboard
                     complete ? apps : $"{apps} (not all four core apps found)"));
                 if (s.ApiAddresses.TryGetValue(install.RootFolder, out var findings) && findings.Count > 0)
                     rows.Add(AddressRow(findings));
+                if (s.PinnedBindings.TryGetValue(install.RootFolder, out var pinned) && pinned.Count > 0)
+                    rows.Add(PinnedRow(pinned));
             }
         }
 
@@ -170,6 +180,17 @@ public static class Dashboard
         };
     }
 
+    public static StatusRow PinnedRow(IReadOnlyList<PinnedBinding> pinned)
+    {
+        string list = string.Join(", ", pinned.Select(p => $"{p.App.Title} on {p.Binding.Address}:{p.Binding.Port}").Distinct());
+        bool stale = pinned.Any(p => p.Health == AddressHealth.NotThisMachine);
+        return stale
+            ? new("GraniteWMS", HealthState.Missing, "Granite sites bound to an old IP address",
+                $"{list}: that address isn't this server's any more, so these sites don't answer. Use Change server address to bind them to all addresses.")
+            : new("GraniteWMS", HealthState.Attention, "Granite sites bound to one IP address",
+                $"{list}: they stop answering if the IP changes, and never answer over IPv6. Use Change server address to bind them to all addresses.");
+    }
+
     private static int Severity(AddressHealth h) => h switch
     {
         AddressHealth.NotThisMachine => 5,
@@ -184,8 +205,13 @@ public static class Dashboard
     {
         if (s.Installs.Count == 0) return new(ModuleId.Address, "Needs a GraniteWMS install.", false);
         var all = s.ApiAddresses.Values.SelectMany(f => f).ToList();
+        var pinned = s.PinnedBindings.Values.SelectMany(p => p).ToList();
         if (all.Any(f => f.Health is AddressHealth.NotThisMachine or AddressHealth.Localhost))
             return new(ModuleId.Address, "The Business API address is out of date. Fix it here.", true);
+        if (pinned.Any(p => p.Health == AddressHealth.NotThisMachine))
+            return new(ModuleId.Address, "Granite sites are bound to an old IP address. Fix it here.", true);
+        if (pinned.Count > 0)
+            return new(ModuleId.Address, "Granite sites are bound to one IP address. Bind them to all addresses here.", false);
         if (all.Any(f => f.Health == AddressHealth.DhcpAddress))
             return new(ModuleId.Address, "Uses a DHCP address that can change. Switch to the server's name here if it isn't reserved.", false);
         return new(ModuleId.Address, "The Business API address matches this server.", false);

@@ -39,7 +39,9 @@ public sealed record AddressPlan(
 /// new one when the old address no longer belongs to this machine: left in,
 /// an address that may now be someone else's computer would stay trusted
 /// by the API. Origins for addresses this machine still has are kept, so
-/// scanners still using them carry on working.
+/// scanners still using them carry on working. Every origin is written in
+/// lower case without a trailing slash: the APIs compare the list letter
+/// for letter with what the browser sends, which is always lower case.
 /// </remarks>
 public static class AddressChange
 {
@@ -112,22 +114,31 @@ public static class AddressChange
                 {
                     if (!result.Contains(origin, StringComparer.OrdinalIgnoreCase)) result.Add(origin);
                 }
+                // Every origin is written the way browsers send it (lower case, no
+                // trailing slash), because the APIs match the list letter for letter.
                 foreach (string origin in origins)
                 {
                     string? host = GraniteAddress.HostOf(origin);
-                    Add(host is not null && stale.Contains(host) ? GraniteAddress.WithHost(origin, newHost) : origin);
+                    Add(GraniteAddress.NormalizeOrigin(host is not null && stale.Contains(host) ? GraniteAddress.WithHost(origin, newHost) : origin));
                 }
                 // The new host must be allowed on every port an origin already names (Web Desktop, Process App).
                 foreach (var port in origins.Select(o => Uri.TryCreate(o, UriKind.Absolute, out var u) ? (u.Scheme, u.Port) : default)
                              .Where(p => p.Scheme is "https" or "http").Distinct())
-                    Add($"{port.Scheme}://{newHost}:{port.Port}");
+                    Add(GraniteAddress.NormalizeOrigin($"{port.Scheme}://{newHost}:{port.Port}"));
 
                 if (!result.SequenceEqual(origins))
                 {
                     updated = JsonTextEditor.SetStringArray(updated, OriginsKey, result);
-                    foreach (string removed in origins.Except(result, StringComparer.OrdinalIgnoreCase))
-                        changes.Add(new SettingChange(app, OriginsKey, removed, "(removed: that address isn't this machine any more)"));
-                    foreach (string added in result.Except(origins, StringComparer.OrdinalIgnoreCase))
+                    foreach (string old in origins)
+                    {
+                        string normal = GraniteAddress.NormalizeOrigin(old);
+                        if (!result.Contains(normal))
+                            changes.Add(new SettingChange(app, OriginsKey, old, "(removed: that address isn't this machine any more)"));
+                        else if (normal != old)
+                            changes.Add(new SettingChange(app, OriginsKey, old, normal + "  (as browsers send it)"));
+                    }
+                    var normalizedOld = origins.Select(GraniteAddress.NormalizeOrigin).ToHashSet();
+                    foreach (string added in result.Where(r => !normalizedOld.Contains(r)))
                         changes.Add(new SettingChange(app, OriginsKey, "(added)", added));
                 }
             }

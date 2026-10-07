@@ -121,11 +121,11 @@ Check(Enum.GetNames<LogLevel>().SequenceEqual(new[] { "Info", "Success", "Warnin
     Check(Out(GraniteAppKind.ProcessApp).Contains("\"https://ULTRA:40081/\"") && Out(GraniteAppKind.ProcessApp).Contains("secret"), "Process App moved, rest untouched");
     var apiOrigins = Granite.Toolkit.Core.Json.JsonTextEditor.GetStringArray(plan.Edits.Single(e => e.App == GraniteAppKind.BusinessApi).Updated, "AllowedOrigins")!;
     Check(!apiOrigins.Any(o => o.Contains("192.168.68.63")), "stale IP origins removed from the API");
-    Check(apiOrigins.Contains("https://ULTRA:40099") && apiOrigins.Contains("https://ULTRA:40080"), "new host allowed on every origin port");
+    Check(apiOrigins.Contains("https://ultra:40099") && apiOrigins.Contains("https://ultra:40080"), "new host allowed on every origin port");
     Check(apiOrigins.Contains("https://localhost:40099") && apiOrigins.Contains("https://192.168.68.70:40080"), "origins for addresses this machine still has are kept");
     Check(apiOrigins.Count == apiOrigins.Distinct(StringComparer.OrdinalIgnoreCase).Count(), "no duplicate origins");
     var cusOrigins = Granite.Toolkit.Core.Json.JsonTextEditor.GetStringArray(plan.Edits.Single(e => e.App == GraniteAppKind.Custodian).Updated, "AllowedOrigins")!;
-    Check(cusOrigins.SequenceEqual(new[] { "https://ULTRA:40099" }), "Custodian origin moved");
+    Check(cusOrigins.SequenceEqual(new[] { "https://ultra:40099" }), "Custodian origin moved");
     Check(plan.Changes.Count(c => c.Setting != AddressChange.OriginsKey) == 3, "three endpoint changes listed");
 
     // Moving to an address the machine still has keeps the old one's origins.
@@ -144,6 +144,21 @@ Check(Enum.GetNames<LogLevel>().SequenceEqual(new[] { "Info", "Success", "Warnin
     bool threwLocal = false;
     try { AddressChange.Plan(files, "localhost", machine); } catch (ArgumentException) { threwLocal = true; }
     Check(threwLocal, "localhost refused as a new address");
+}
+
+// ---- Origins and site bindings ----------------------------------------------------
+{
+    Check(GraniteAddress.NormalizeOrigin(" https://Ultra:40099/ ") == "https://ultra:40099", "origin: lower case, no trailing slash");
+    Check(GraniteAddress.NormalizeOrigin("https://wms.Client.com:443") == "https://wms.client.com", "origin: default port dropped, as browsers send it");
+    Check(GraniteAddress.NormalizeOrigin("not a url") == "not a url", "origin: non-URL left as it is");
+    var machine = new MachineAddresses(new[] { "ULTRA" }, Array.Empty<string>(), new[] { "192.168.68.61" });
+    var mixed = AddressChange.Plan(new Dictionary<GraniteAppKind, (string, byte[])> { [GraniteAppKind.BusinessApi] = ("x", System.Text.Encoding.UTF8.GetBytes("{\"AllowedOrigins\": [ \"https://Ultra:40099\" ]}")) }, "ultra", machine);
+    Check(Granite.Toolkit.Core.Json.JsonTextEditor.GetStringArray(mixed.Edits.Single().Updated, "AllowedOrigins")!.SequenceEqual(new[] { "https://ultra:40099" }), "mixed-case origin lower-cased");
+    var bindings = new[] { new IisBinding("https", "192.168.68.63", 40099, ""), new IisBinding("http", "*", 80, "wms") };
+    Check(SiteBindings.AllAddressesBindingList(bindings) == "https/*:40099:,http/*:80:wms", "unpinned binding list keeps every binding");
+    Check(IisCommands.IpPort("192.168.68.63", 40099) == "192.168.68.63:40099" && IisCommands.IpPort("*", 40099) == "0.0.0.0:40099" && IisCommands.IpPort("fe80::1", 1) == "[fe80::1]:1", "http.sys ip:port keys");
+    Check(IisCommands.BindingList(bindings) == "https/192.168.68.63:40099:,http/*:80:wms", "binding list as it is, for undo");
+    Check(SiteBindings.IsAllAddresses(new IisBinding("https", "0.0.0.0", 1, "")) && SiteBindings.IsAllAddresses(new IisBinding("https", "", 1, "")), "all-addresses forms");
 }
 
 // ---- CertificateCoverage ------------------------------------------------------------

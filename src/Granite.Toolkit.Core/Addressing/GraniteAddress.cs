@@ -103,6 +103,22 @@ public static class GraniteAddress
         return $"{uri.Scheme}://{newHost}{port}{path}";
     }
 
+    /// <summary>
+    /// An origin the way a browser sends it: scheme and host in lower case,
+    /// the port, no trailing slash ("https://ultra:40099"). The Granite APIs
+    /// compare AllowedOrigins letter for letter, so "https://Ultra:40099" or
+    /// "https://ultra:40099/" in the list never matches what Chrome or Edge
+    /// sends and the call is refused. Anything that isn't a URL is returned
+    /// trimmed, unchanged.
+    /// </summary>
+    public static string NormalizeOrigin(string origin)
+    {
+        string trimmed = origin.Trim();
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) || uri.Host.Length == 0) return trimmed;
+        string port = uri.IsDefaultPort ? "" : ":" + uri.Port;
+        return $"{uri.Scheme.ToLowerInvariant()}://{uri.Host.ToLowerInvariant()}{port}";
+    }
+
     /// <summary>The choices offered for a new address: names first, then fixed IPs, then DHCP IPs.</summary>
     public static IReadOnlyList<string> Suggestions(MachineAddresses machine) =>
         machine.Names.Concat(machine.FixedIPv4).Concat(machine.DhcpIPv4)

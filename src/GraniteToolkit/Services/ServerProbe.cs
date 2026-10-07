@@ -22,6 +22,7 @@ public static class ServerProbe
         IReadOnlyList<GraniteInstall> installs = Array.Empty<GraniteInstall>();
         IReadOnlyList<string> attach = Array.Empty<string>();
         var addresses = new Dictionary<string, IReadOnlyList<AddressFinding>>(StringComparer.OrdinalIgnoreCase);
+        var pinned = new Dictionary<string, IReadOnlyList<PinnedBinding>>(StringComparer.OrdinalIgnoreCase);
         string? scanError = null;
 
         if (GraniteInstallScanner.IisInstalled)
@@ -32,7 +33,10 @@ public static class ServerProbe
                 installs = scan.Installs;
                 var machine = LocalAddressDiscovery.Current();
                 foreach (var install in installs)
+                {
                     addresses[install.RootFolder] = ReadApiAddresses(install, machine);
+                    pinned[install.RootFolder] = SiteBindings.Pinned(install, machine);
+                }
                 attach = GraniteInstallScanner.FindAttachSites(scan, File.Exists, Environment.ExpandEnvironmentVariables)
                     .Select(site => site.Bindings.Count == 0
                         ? site.Name
@@ -59,6 +63,7 @@ public static class ServerProbe
             IisScanError = scanError,
             AttachSites = attach,
             ApiAddresses = addresses,
+            PinnedBindings = pinned,
             BiSyncTasks = await ReadBiTasksAsync(token),
             NiFiServices = await ReadNiFiServicesAsync(token)
         };
