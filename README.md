@@ -106,6 +106,9 @@ Package versions are all in `Directory.Packages.props`. Module versions stay in 
 
 ## Changes in this version
 
+**0.3.4** (2026-10-13, first build for the test team)
+- **NiFi Deploy 0.1.2:** the NiFi service restarts itself if the NiFi process exits unexpectedly (NSSM AppExit Restart, with a restart delay and throttle), instead of staying down until someone notices.
+
 **0.3.2** (2026-10-06)
 - **Install Wizard 0.7.0: install alongside an existing Granite install** (V7 next to V6, a test stack next to live). Step 4 has a new "Install alongside" option: it adds a suffix to the site names (" V7" from the release name, otherwise " 2", " 3"...), picks free ports, and switches "Replace existing IIS sites" off. A "Find free ports" button does the port part on its own, and Step 4 says straight away whether the chosen ports are free and, if not, what holds them.
 - Ports are checked against the IIS sites on the server, anything else listening, and the port ranges Windows reserves for Hyper-V, WSL and Docker (`netsh int ipv4 show excludedportrange`), which IIS can't bind to. Suggestions stay between 1024 and 49151 and move as a block where possible (40080-40099 becomes 40180-40199), so the second install is easy to recognise.

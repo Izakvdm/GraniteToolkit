@@ -14,7 +14,7 @@
     <!-- Product metadata -->
     <Product>Granite NiFi Deploy</Product>
     <Company>Cradle Technology Services</Company>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Description>Installs Apache NiFi as a Windows service for GraniteWMS integrations and sets up the Granite CSV import: the SQL framework and feeds, a least-privilege SQL login, and the NiFi flow, configured through NiFi's own API.</Description>
   </PropertyGroup>
 
