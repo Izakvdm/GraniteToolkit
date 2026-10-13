@@ -122,7 +122,8 @@ public static class NiFiConfigFiles
     /// <summary>
     /// NSSM command lines that install NiFi as a service, as the guide does
     /// (application nifi.cmd, argument start, folder bin) plus automatic
-    /// start, rotated logs and a minute to shut down cleanly.
+    /// start, rotated logs, a minute to shut down cleanly, and auto-restart
+    /// on crash (see the AppExit/AppRestartDelay/AppThrottle entries below).
     /// </summary>
     public static IReadOnlyList<string[]> NssmInstallCommands(string serviceName, string nifiHome, string version)
     {
@@ -139,7 +140,14 @@ public static class NiFiConfigFiles
             new[] { "set", serviceName, "AppStderr", log },
             new[] { "set", serviceName, "AppRotateFiles", "1" },
             new[] { "set", serviceName, "AppRotateBytes", "10485760" },
-            new[] { "set", serviceName, "AppStopMethodConsole", "60000" }
+            new[] { "set", serviceName, "AppStopMethodConsole", "60000" },
+            // Auto-restart if NiFi's process ever exits unexpectedly (crash, OOM-kill, a
+            // bad flow deploy) instead of silently staying down until someone notices.
+            // 5s delay before restarting, and NSSM's own crash-loop guard (a restart within
+            // 1500ms of the previous one is treated as a loop and backed off).
+            new[] { "set", serviceName, "AppExit", "Default", "Restart" },
+            new[] { "set", serviceName, "AppRestartDelay", "5000" },
+            new[] { "set", serviceName, "AppThrottle", "1500" }
         };
     }
 }

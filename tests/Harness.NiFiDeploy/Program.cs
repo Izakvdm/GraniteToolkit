@@ -141,6 +141,9 @@ var nssm = NiFiConfigFiles.NssmInstallCommands("NiFi", Path.Combine("C:", "nifi"
 Check(nssm[0].SequenceEqual(new[] { "install", "NiFi", Path.Combine("C:", "nifi", "nifi-2.11.0", "bin", "nifi.cmd"), "start" }), "nssm install: nifi.cmd start");
 Check(nssm.Any(a => a.SequenceEqual(new[] { "set", "NiFi", "Start", "SERVICE_AUTO_START" })), "nssm: automatic start");
 Check(nssm.Any(a => a[2] == "AppDirectory" && a[3].EndsWith("bin")), "nssm: runs in bin");
+Check(nssm.Any(a => a.SequenceEqual(new[] { "set", "NiFi", "AppExit", "Default", "Restart" })), "nssm: restarts on crash");
+Check(nssm.Any(a => a.Length >= 4 && a[2] == "AppRestartDelay" && a[3] == "5000"), "nssm: restart delay set");
+Check(nssm.Any(a => a.Length >= 4 && a[2] == "AppThrottle" && a[3] == "1500"), "nssm: crash-loop throttle set");
 Check(NiFiConfigFiles.NiFiEnvCmd.Contains("set JAVA_HOME=%NIFI_HOME%\\jdk\r\n") && !NiFiConfigFiles.NiFiEnvCmd.Contains("\n\n"), "nifi-env.cmd: bundled JDK, CRLF");
 {
     // NSSM doesn't create the folder for AppStdout/AppStderr and the NiFi zip has no logs folder:
